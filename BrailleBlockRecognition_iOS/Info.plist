@@ -36,7 +36,7 @@
 	<key>NSHumanReadableCopyright</key>
 	<string></string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string></string>
+	<string>常に許可を選択すると、本Appがバックグラウンドで動作している場合に位置情報を必要とするサービスをご利用いただけます。</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

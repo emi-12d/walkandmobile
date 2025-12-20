@@ -12,6 +12,9 @@ import UIKit
 protocol InfoViewDelegate: AnyObject{
     func swtichCamera(ecomode: String)
     func setFontsize()
+    
+    //変更 2024/07/07
+    func updatePlaybackSpeed(_ speed: Float) //再生速度メソッド
 }
 
 class InfoViewController: UIViewController,UIGestureRecognizerDelegate {
@@ -35,7 +38,20 @@ class InfoViewController: UIViewController,UIGestureRecognizerDelegate {
     @IBOutlet weak var ecomodeOff: UIButton!
 
     var fontsize: String = "Medium"
-    var loadSpeed: Float = 0.5
+    //var loadSpeed: Float = 0.5 /*UserDefaults.standard.float(forKey: "reproductionSpeed")*/
+    
+    //変更 2024/07/21
+    var loadSpeed: Float {
+        get {
+            let speed = UserDefaults.standard.float(forKey: "reproductionSpeed")
+            return speed == 0.0 ? 0.5 : speed
+        }
+        set {
+            UserDefaults.standard.set(newValue, forKey: "reproductionSpeed")
+            delegate?.updatePlaybackSpeed(newValue)
+        }
+    }
+    
     var ecomode:String = "OFF"
 
     var infoCodeData: CodeBlockController?
@@ -48,10 +64,17 @@ class InfoViewController: UIViewController,UIGestureRecognizerDelegate {
         previousVCButton = UIBarButtonItem(barButtonSystemItem: .done, target: self, action: #selector(previousVCButtonTapped(_:)))
         self.navigationItem.rightBarButtonItem = previousVCButton
         
+        //変更 2024/07/07
+        var loadSpeed = UserDefaults.standard.float(forKey: "reproductionSpeed")
+        /*if loadSpeed == 0.5{
+            loadSpeed = 0.5
+            UserDefaults.standard.setValue(loadSpeed, forKey: "reproductionSpeed")
+        }*/
+        speedLabel.text = "\(round(loadSpeed*100)/100)"
         
-        if UserDefaults.standard.float(forKey: "reproductionSpeed") != 0.0 {
+        /*if UserDefaults.standard.float(forKey: "reproductionSpeed") != 0.0 {
             loadSpeed = UserDefaults.standard.float(forKey: "reproductionSpeed")
-        }
+        }*/
         
         fontItemLabel.text = NSLocalizedString("Fontsize", comment: "")
         fontsize = UserDefaults.standard.string(forKey: "fontsize") ?? ""
@@ -129,9 +152,10 @@ class InfoViewController: UIViewController,UIGestureRecognizerDelegate {
         speedItemLabel.text = NSLocalizedString("Playback Speed", comment: "")
         speedItemLabel.accessibilityHint = "\(loadSpeed)"
         
-        ecomodeItemLabel.text = NSLocalizedString("EcoMode", comment: "")
+        ecomodeItemLabel.text = NSLocalizedString("省電力モード", comment: "")
         ecomode = UserDefaults.standard.string(forKey: "ecomode") ?? ""
-        ecomodeLabel.text = NSLocalizedString(ecomode, comment: "")
+       // ecomodeLabel.text = NSLocalizedString(ecomode, comment: "")
+        //ecomodeLabel.isHidden = true;//現在の
  
         ecomodeOn.setTitle("ON", for: .normal)
         ecomodeOn.titleLabel?.font = UIFont.systemFont(ofSize: 25)
@@ -166,6 +190,9 @@ class InfoViewController: UIViewController,UIGestureRecognizerDelegate {
         delegate?.setFontsize()
         delegate?.swtichCamera(ecomode: ecomode)
         
+        //変更 2024/07/21
+        delegate?.updatePlaybackSpeed(loadSpeed)
+        
         dismiss(animated: true, completion: nil)
     }
     //小ボタンを押した時の処理
@@ -183,19 +210,42 @@ class InfoViewController: UIViewController,UIGestureRecognizerDelegate {
         fontsize = "Large"
         fontLabel.text = NSLocalizedString(fontsize, comment: "")
     }
+    
     //マイナスボタンを押した時の処理
     @objc func decelerateDidTapped(_ sender : Any) {
+        
+        //変更 2024/07/07
+        var loadSpeed = UserDefaults.standard.float(forKey: "reproductionSpeed")
         if loadSpeed > 0.1{
             loadSpeed -= 0.10
+            loadSpeed = max(0.1, loadSpeed) //最低値を0.1に制限
             speedLabel.text = "\(round(loadSpeed*100)/100)"
+            UserDefaults.standard.setValue(loadSpeed, forKey: "reproductionSpeed") //再生速度を保存
+            delegate?.updatePlaybackSpeed(loadSpeed) //変更を通知
         }
+        
+        /*if loadSpeed > 0.1{
+            loadSpeed -= 0.10
+            speedLabel.text = "\(round(loadSpeed*100)/100)"
+        }*/
     }
     //プラスボタンを押した時の処理
     @objc func accelerationDidTapped(_ sender : Any) {
-        if loadSpeed < 1.0{
+        
+        //変更 2024/07/07
+        var loadSpeed = UserDefaults.standard.float(forKey: "reproductionSpeed")
+        if loadSpeed < 1.5{
+            loadSpeed += 0.10
+            loadSpeed = min(1.5, loadSpeed) //最大値を1.5に制限 //変更 2024/07/28 速度の最大値を1.5に変更
+            speedLabel.text = "\(round(loadSpeed*100)/100)"
+            UserDefaults.standard.setValue(loadSpeed, forKey: "reproductionSpeed") //再生速度を保存
+            delegate?.updatePlaybackSpeed(loadSpeed) //変更を通知
+        }
+        
+        /*if loadSpeed < 1.0{
             loadSpeed += 0.10
             speedLabel.text = "\(round(loadSpeed*100)/100)"
-        }
+        }*/
     }
     
     //ONボタンを押した時の処理

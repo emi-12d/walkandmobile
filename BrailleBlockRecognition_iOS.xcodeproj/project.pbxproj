@@ -27,8 +27,10 @@
 		D43116CE250614180050EA18 /* BrailleBlockRecognition_iOSTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D43116CD250614180050EA18 /* BrailleBlockRecognition_iOSTests.swift */; };
 		D43116D9250614180050EA18 /* BrailleBlockRecognition_iOSUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D43116D8250614180050EA18 /* BrailleBlockRecognition_iOSUITests.swift */; };
 		D43116E8250614FC0050EA18 /* OpenCV.mm in Sources */ = {isa = PBXBuildFile; fileRef = D43116E7250614FC0050EA18 /* OpenCV.mm */; };
+		DB3FFFF42B55112800CA0EBF /* CodeBlockController2.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB3FFFF32B55112800CA0EBF /* CodeBlockController2.swift */; };
 		DBA553992A2101B6007797CE /* EvacuationViewContoller.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBA553982A2101B6007797CE /* EvacuationViewContoller.swift */; };
 		DBA5539B2A2101C4007797CE /* CurrentViewContoller.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBA5539A2A2101C4007797CE /* CurrentViewContoller.swift */; };
+		DBAA2C172AB1823700CF52E3 /* NextViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBAA2C162AB1823700CF52E3 /* NextViewController.swift */; };
 		DBBB85302A0E975400D2A165 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBBB852F2A0E975400D2A165 /* ViewController.swift */; };
 		DBECC2F329481C6100DB9A40 /* detailStart.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = DBECC2EF29481C6100DB9A40 /* detailStart.mp3 */; };
 		DBECC2F429481C6100DB9A40 /* exclusiveStart.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = DBECC2F029481C6100DB9A40 /* exclusiveStart.mp3 */; };
@@ -94,8 +96,10 @@
 		D43116E6250614FC0050EA18 /* BrailleBlockRecognition_iOS-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "BrailleBlockRecognition_iOS-Bridging-Header.h"; sourceTree = "<group>"; };
 		D43116E7250614FC0050EA18 /* OpenCV.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = OpenCV.mm; sourceTree = "<group>"; };
 		D43116E9250615580050EA18 /* OpenCV.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = OpenCV.h; sourceTree = "<group>"; };
+		DB3FFFF32B55112800CA0EBF /* CodeBlockController2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeBlockController2.swift; sourceTree = "<group>"; };
 		DBA553982A2101B6007797CE /* EvacuationViewContoller.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = EvacuationViewContoller.swift; sourceTree = "<group>"; };
 		DBA5539A2A2101C4007797CE /* CurrentViewContoller.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CurrentViewContoller.swift; sourceTree = "<group>"; };
+		DBAA2C162AB1823700CF52E3 /* NextViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NextViewController.swift; sourceTree = "<group>"; };
 		DBBB852F2A0E975400D2A165 /* ViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
 		DBECC2EF29481C6100DB9A40 /* detailStart.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = detailStart.mp3; sourceTree = "<group>"; };
 		DBECC2F029481C6100DB9A40 /* exclusiveStart.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = exclusiveStart.mp3; sourceTree = "<group>"; };
@@ -138,6 +142,7 @@
 			isa = PBXGroup;
 			children = (
 				2A66B737271FBB6F0069EF76 /* CodeBlockController.swift */,
+				DB3FFFF32B55112800CA0EBF /* CodeBlockController2.swift */,
 			);
 			path = Controller;
 			sourceTree = "<group>";
@@ -147,6 +152,7 @@
 			children = (
 				DBBB852F2A0E975400D2A165 /* ViewController.swift */,
 				2AACE764270D1F33009D60D0 /* InfoViewController.swift */,
+				DBAA2C162AB1823700CF52E3 /* NextViewController.swift */,
 				DBA553982A2101B6007797CE /* EvacuationViewContoller.swift */,
 				DBA5539A2A2101C4007797CE /* CurrentViewContoller.swift */,
 			);
@@ -347,13 +353,13 @@
 					};
 					D43116C8250614180050EA18 = {
 						CreatedOnToolsVersion = 11.7;
-						DevelopmentTeam = JH7QQ3TS8M;
+						DevelopmentTeam = 72S23KX6NZ;
 						ProvisioningStyle = Automatic;
 						TestTargetID = D43116AF250614170050EA18;
 					};
 					D43116D3250614180050EA18 = {
 						CreatedOnToolsVersion = 11.7;
-						DevelopmentTeam = JH7QQ3TS8M;
+						DevelopmentTeam = 72S23KX6NZ;
 						ProvisioningStyle = Automatic;
 						TestTargetID = D43116AF250614170050EA18;
 					};
@@ -493,11 +499,13 @@
 				DBA553992A2101B6007797CE /* EvacuationViewContoller.swift in Sources */,
 				2A66B73E272032670069EF76 /* VideoCaptureModel.swift in Sources */,
 				2A66B735271EF0E70069EF76 /* DataBaseModel.swift in Sources */,
+				DB3FFFF42B55112800CA0EBF /* CodeBlockController2.swift in Sources */,
 				2A66B738271FBB6F0069EF76 /* CodeBlockController.swift in Sources */,
 				2A66B733271EF08A0069EF76 /* CodeBlock+CoreDataClass copy.swift in Sources */,
 				DBA5539B2A2101C4007797CE /* CurrentViewContoller.swift in Sources */,
 				DBBB85302A0E975400D2A165 /* ViewController.swift in Sources */,
 				2AACE765270D1F33009D60D0 /* InfoViewController.swift in Sources */,
+				DBAA2C172AB1823700CF52E3 /* NextViewController.swift in Sources */,
 				D43116B4250614170050EA18 /* AppDelegate.swift in Sources */,
 				D43116B6250614170050EA18 /* SceneDelegate.swift in Sources */,
 				2AE542A7271EAC13003C9D33 /* AudioPlayerModel.swift in Sources */,
@@ -674,6 +682,7 @@
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				GCC_WARN_UNDECLARED_SELECTOR = YES;
@@ -684,7 +693,8 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
-				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
@@ -697,7 +707,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1.0.17;
+				CURRENT_PROJECT_VERSION = 1.0.20;
 				DEVELOPMENT_TEAM = 72S23KX6NZ;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -706,7 +716,7 @@
 				INFOPLIST_FILE = BrailleBlockRecognition_iOS/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 13.6;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				MARKETING_VERSION = 1.7.4;
+				MARKETING_VERSION = 1.7.8;
 				PRODUCT_BUNDLE_IDENTIFIER = "jp.matuilab.BrailleBlockRecognition-iOS20201001";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -728,7 +738,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1.0.17;
+				CURRENT_PROJECT_VERSION = 1.0.20;
 				DEVELOPMENT_TEAM = 72S23KX6NZ;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -737,7 +747,7 @@
 				INFOPLIST_FILE = BrailleBlockRecognition_iOS/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 13.6;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				MARKETING_VERSION = 1.7.4;
+				MARKETING_VERSION = 1.7.8;
 				PRODUCT_BUNDLE_IDENTIFIER = "jp.matuilab.BrailleBlockRecognition-iOS20201212";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -756,8 +766,9 @@
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				BUNDLE_LOADER = "$(TEST_HOST)";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = JH7QQ3TS8M;
+				DEVELOPMENT_TEAM = 72S23KX6NZ;
 				INFOPLIST_FILE = BrailleBlockRecognition_iOSTests/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 13.7;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
@@ -800,7 +811,7 @@
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = JH7QQ3TS8M;
+				DEVELOPMENT_TEAM = 72S23KX6NZ;
 				INFOPLIST_FILE = BrailleBlockRecognition_iOSUITests/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = "jp.matuilab.BrailleBlockRecognition-iOSUITests";
@@ -843,7 +854,7 @@
 				D43116DC250614180050EA18 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 		D43116DD250614180050EA18 /* Build configuration list for PBXNativeTarget "BrailleBlockRecognition_iOS" */ = {
 			isa = XCConfigurationList;
@@ -852,7 +863,7 @@
 				D43116DF250614180050EA18 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 		D43116E0250614180050EA18 /* Build configuration list for PBXNativeTarget "BrailleBlockRecognition_iOSTests" */ = {
 			isa = XCConfigurationList;
@@ -861,7 +872,7 @@
 				D43116E2250614180050EA18 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 		D43116E3250614180050EA18 /* Build configuration list for PBXNativeTarget "BrailleBlockRecognition_iOSUITests" */ = {
 			isa = XCConfigurationList;
@@ -870,7 +881,7 @@
 				D43116E5250614180050EA18 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
 

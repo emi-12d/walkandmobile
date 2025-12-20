@@ -1,9 +1,11 @@
 // 2022-5-26　受信
-// cv::が必要　
+// cv::が必要
 #import <opencv2/opencv.hpp>
 #import <opencv2/core.hpp>
 #import <opencv2/highgui.hpp>
 #import <opencv2/imgcodecs/ios.h>
+
+#include <opencv2/core/version.hpp>
 
 #import "OpenCV.h" //ライブラリによってはNOマクロがバッティングするので，これは最後にimport
 
@@ -36,6 +38,8 @@ cv::Mat cvMatC3(cv::Mat cvMat){
 @implementation OpenCV : NSObject
 - (NSArray *) reader:(UIImage *)img {
     CGColorSpaceRef colorSpace = CGImageGetColorSpace(img.CGImage);
+    
+    
 
         //切り抜きサイズに合わせるため、拡大
         //固定値でないと重くなる..
@@ -77,20 +81,20 @@ cv::Mat cvMatC3(cv::Mat cvMat){
 
 
     vector<vector<cv::Point> > tr;// 三角形　エリア 座標 個数オーバーか？　２０－－－＞４０へ 原因不明エラーでストップ　9/14
-    tr.resize(20);
+    //tr.resize(20);
     tr.clear();
     vector<vector<cv::Point> > Tr;// 三角形　エリア 座標 // = vector<Point> tr[10];
-    Tr.resize(20);
+    //Tr.resize(20);
     Tr.clear();
 
     vector<vector<cv::Point> > Sq;// ４角形　エリア 座標 Canny
-    Sq.resize(20);
+    //Sq.resize(20);
     Sq.clear();
     vector<vector<cv::Point> > Sqa;// ４角形　エリア 座標 Adaptive
-    Sqa.resize(20);
+    //Sqa.resize(20);
     Sqa.clear();
     vector<vector<cv::Point> > sq;// ４角形　エリア 座標 duplicate check
-    sq.resize(40);
+    //sq.resize(40);
     sq.clear();
 
 
@@ -158,7 +162,7 @@ cv::Mat cvMatC3(cv::Mat cvMat){
 //        Ret[2] = Angl;
         if (ret == 0) {// 1個のみ
           ////////////////右上黒　平面ブロックコードは一個だけでもOK 2020-12-15
-          if  ((Code < 1048576)||(Code > 2097152)){ // 追加2022/02/19
+          if  ((Code < 5242880)||(Code > 6291456)){ // 追加2022/02/19  更新日23/9/7前回数値1048576   2097152
               Code=0; Angl=-1;
           }
         }
@@ -242,22 +246,44 @@ static int mask( const Mat& img1, const Mat& image, const Mat& imageGR ,vector<v
                     maxCosine = MAX(maxCosine, cosine);
                 }
                 int check = sqch(approx);
-                if(( maxCosine < MCosine )&&(check == 0)){
-                    sqa[s1].push_back(cv::Point(approx[0].x, approx[0].y));
-                    sqa[s1].push_back(cv::Point(approx[1].x, approx[1].y));
-                    sqa[s1].push_back(cv::Point(approx[2].x, approx[2].y));
-                    sqa[s1].push_back(cv::Point(approx[3].x, approx[3].y));
-                    // 右周りの座標?
+                
+                // 2025/7/30 修正
+                
+                if ((maxCosine < MCosine) && (check == 0)) {
+                    // 新しい四角形のためのベクターを作成し、approxの頂点をコピー
+                    std::vector<cv::Point> new_square = approx;
 
-                    drawContours(mask0,contours,k,Scalar(255),FILLED);
-                    s1++;s2++;
+                    // sqaの末尾に新しい四角形を追加
+                    sqa.push_back(new_square);
+
+                    // 右周りの座標?
+                    drawContours(mask0, contours, k, Scalar(255), FILLED);
+
+                    // s1をsqaの実際のサイズに同期させる
+                    s1 = (int)sqa.size();
+                    s2++;
                 }
+                
+//                if(( maxCosine < MCosine )&&(check == 0)){
+//                    sqa[s1].push_back(cv::Point(approx[0].x, approx[0].y));
+//                    sqa[s1].push_back(cv::Point(approx[1].x, approx[1].y));
+//                    sqa[s1].push_back(cv::Point(approx[2].x, approx[2].y));
+//                    sqa[s1].push_back(cv::Point(approx[3].x, approx[3].y));
+//                    // 右周りの座標?
+//
+//                    drawContours(mask0,contours,k,Scalar(255),FILLED);
+//                    s1++;s2++;
+//                }
             }
+            
+            // 2025/7/30
+            
             if ((aps > 4 )&&(aps <= 20 )){// 20は適当　検討要する？
                 //convexHull(approx, approx_con);
                 convexHull(Mat(contours[k]), approx_con);
                 area2 = contourArea(approx_con);
-                if ((approx_con.size() == 4 ) && (area2 < SQmax)){
+                
+                if ((approx_con.size() == 4) && (area2 < SQmax)){
                     maxCosine = 0;
                     for( int j = 0; j < 4; j++ )
                     {
@@ -266,14 +292,14 @@ static int mask( const Mat& img1, const Mat& image, const Mat& imageGR ,vector<v
                     }
                     int check = sqch(approx_con);
                     if(( maxCosine < MCosine )&&(check == 0)){
-                        sqa[s1].push_back(cv::Point(approx_con[0].x,approx_con[0].y));
-                        sqa[s1].push_back(cv::Point(approx_con[3].x,approx_con[3].y));
-                        sqa[s1].push_back(cv::Point(approx_con[2].x,approx_con[2].y));
-                        sqa[s1].push_back(cv::Point(approx_con[1].x,approx_con[1].y));
-                        drawContours(mask0,contours0,k,Scalar(255),FILLED);
-                        //sqa[s1].push_back(approx_con);// この部分不完全６－２１
-                        s1++;s3++;
-                        //polylines(img1, approx_con, true, Scalar(0, 0, 255), 2);//
+                        // 新しい四角形のためのベクターを作成し、approx_conをコピー
+                        std::vector<cv::Point> new_square = approx_con;
+                        // sqaの末尾に新しい四角形を追加
+                        sqa.push_back(new_square);
+                        
+                        // s1をsqaの実際のサイズに同期させる
+                        s1 = (int)sqa.size();
+                        s3++;
                     }
                 }
                 if (approx_con.size() > 4 ){
@@ -287,21 +313,70 @@ static int mask( const Mat& img1, const Mat& image, const Mat& imageGR ,vector<v
                         }
                         int check = sqch(approx_con1);
                         if(( maxCosine < MCosine )&&(check == 0)){
-                            //if( maxCosine < MCosine ){
-                            sqa[s1].push_back(cv::Point(approx_con1[0].x,approx_con1[0].y));
-                            sqa[s1].push_back(cv::Point(approx_con1[1].x,approx_con1[1].y));
-                            sqa[s1].push_back(cv::Point(approx_con1[2].x,approx_con1[2].y));
-                            sqa[s1].push_back(cv::Point(approx_con1[3].x,approx_con1[3].y));
-
+                            // 新しい四角形のためのベクターを作成し、approx_con1をコピー
+                            std::vector<cv::Point> new_square = approx_con1;
+                            // sqaの末尾に新しい四角形を追加
+                            sqa.push_back(new_square);
+                            
                             drawContours(mask0,contours,k,Scalar(255),FILLED);
-                            s1++;s4++;
+                            // s1をsqaの実際のサイズに同期させる
+                            s1 = (int)sqa.size();
+                            s4++;
                         }
                     }
                 }
             }
+//            if ((aps > 4 )&&(aps <= 20 )){// 20は適当　検討要する？
+//                //convexHull(approx, approx_con);
+//                convexHull(Mat(contours[k]), approx_con);
+//                area2 = contourArea(approx_con);
+//                if ((approx_con.size() == 4 ) && (area2 < SQmax)){
+//                    maxCosine = 0;
+//                    for( int j = 0; j < 4; j++ )
+//                    {
+//                        cosine = fabs(a_angle(approx_con[j], approx_con[(j+2)%4], approx_con[(j+3)%4]));
+//                        maxCosine = MAX(maxCosine, cosine);
+//                    }
+//                    int check = sqch(approx_con);
+//                    if(( maxCosine < MCosine )&&(check == 0)){
+//                        sqa[s1].push_back(cv::Point(approx_con[0].x,approx_con[0].y));
+//                        sqa[s1].push_back(cv::Point(approx_con[3].x,approx_con[3].y));
+//                        sqa[s1].push_back(cv::Point(approx_con[2].x,approx_con[2].y));
+//                        sqa[s1].push_back(cv::Point(approx_con[1].x,approx_con[1].y));
+//                        drawContours(mask0,contours0,k,Scalar(255),FILLED);
+//                        //sqa[s1].push_back(approx_con);// この部分不完全６－２１
+//                        s1++;s3++;
+//                        //polylines(img1, approx_con, true, Scalar(0, 0, 255), 2);//
+//                    }
+//                }
+//                if (approx_con.size() > 4 ){
+//                    approxPolyDP(approx_con, approx_con1, arcLength(approx_con, true)*0.005, true);
+//                    if ((approx_con1.size() == 4 ) && (area2 < SQmax)){
+//                        maxCosine = 0;
+//                        for( int j = 0; j < 4; j++ )
+//                        {
+//                            cosine = fabs(a_angle(approx_con1[j], approx_con1[(j+2)%4], approx_con1[(j+3)%4]));
+//                            maxCosine = MAX(maxCosine, cosine);
+//                        }
+//                        int check = sqch(approx_con1);
+//                        if(( maxCosine < MCosine )&&(check == 0)){
+//                            //if( maxCosine < MCosine ){
+//                            sqa[s1].push_back(cv::Point(approx_con1[0].x,approx_con1[0].y));
+//                            sqa[s1].push_back(cv::Point(approx_con1[1].x,approx_con1[1].y));
+//                            sqa[s1].push_back(cv::Point(approx_con1[2].x,approx_con1[2].y));
+//                            sqa[s1].push_back(cv::Point(approx_con1[3].x,approx_con1[3].y));
+//
+//                            drawContours(mask0,contours,k,Scalar(255),FILLED);
+//                            s1++;s4++;
+//                        }
+//                    }
+//                }
+//            }
         }
     }
 
+    
+    // 2025/7/30 修正
     for( size_t k = 0; k < contours0.size(); k++ )
     {
         if (s1 > 10) break;
@@ -309,80 +384,158 @@ static int mask( const Mat& img1, const Mat& image, const Mat& imageGR ,vector<v
         if (area >SQmin && area < SQmax){// 25000  95000
             approxPolyDP(Mat(contours0[k]), approx, arcLength(Mat(contours0[k]), true)*0.01, true);// 0.01
             aps = approx.size();
-
-    //    printf("APS=%d ",aps);
-              if (aps == 4 ){// 左右周りは不明6-13
-                  maxCosine = 0;
-                  for( int j = 0; j < 4; j++ )
-                      {
-                          cosine = fabs(a_angle(approx[j], approx[(j+2)%4], approx[(j+3)%4]));
-                          maxCosine = MAX(maxCosine, cosine);
-                        }
-                  int check = sqch(approx);
-                  if(( maxCosine < MCosine )&&(check == 0)){
-                    //    printf("Q1 \n");
-                       sqa[s1].push_back(cv::Point(approx[0].x, approx[0].y));
-                       sqa[s1].push_back(cv::Point(approx[1].x, approx[1].y));
-                       sqa[s1].push_back(cv::Point(approx[2].x, approx[2].y));
-                       sqa[s1].push_back(cv::Point(approx[3].x, approx[3].y));
-                        // 右周りの座標?
-                      drawContours(mask0,contours0,k,Scalar(255),FILLED);
-                      s1++;s2++;
-                  }
-              }
-              if ((aps > 4 )&&(aps <= 20 )){// 20は適当　検討要する？１０にしたらダメ？２－４
-              //convexHull(approx, approx_con);
-                  convexHull(Mat(contours0[k]), approx_con);
-                  area2 = contourArea(approx_con);
-                  if ((approx_con.size() == 4 ) && (area2 < SQmax)){
+            
+            // 四角形を検出する最初のブロック
+            if (aps == 4 ){
+                maxCosine = 0;
+                for( int j = 0; j < 4; j++ )
+                {
+                    cosine = fabs(a_angle(approx[j], approx[(j+2)%4], approx[(j+3)%4]));
+                    maxCosine = MAX(maxCosine, cosine);
+                }
+                int check = sqch(approx);
+                if(( maxCosine < MCosine )&&(check == 0)){
+                    // 新しい四角形のためのベクターを作成し、approxをコピー
+                    std::vector<cv::Point> new_square = approx;
+                    // sqaの末尾に新しい四角形を追加
+                    sqa.push_back(new_square);
+                    
+                    drawContours(mask0,contours0,k,Scalar(255),FILLED);
+                    s1++;s2++;
+                }
+            }
+            
+            // 多角形（aps > 4）を処理するブロック
+            if ((aps > 4 )&&(aps <= 20 )){
+                convexHull(Mat(contours0[k]), approx_con);
+                area2 = contourArea(approx_con);
+                
+                // convexHullの結果が4つの頂点を持つ場合
+                if ((approx_con.size() == 4 ) && (area2 < SQmax)){
                     maxCosine = 0;
                     for( int j = 0; j < 4; j++ )
-                        {
-                            //cosine = fabs(a_angle(approx_con[j%4], approx_con[j-2], approx_con[j-1]));
-                            cosine = fabs(a_angle(approx_con[j], approx_con[(j+2)%4], approx_con[(j+3)%4]));
-                            maxCosine = MAX(maxCosine, cosine);
-                          }
+                    {
+                        cosine = fabs(a_angle(approx_con[j], approx_con[(j+2)%4], approx_con[(j+3)%4]));
+                        maxCosine = MAX(maxCosine, cosine);
+                    }
                     int check = sqch(approx_con);
                     if(( maxCosine < MCosine )&&(check == 0)){
-                    //  printf("Q2 \n");
-                        sqa[s1].push_back(cv::Point(approx_con[0].x,approx_con[0].y));
-                        sqa[s1].push_back(cv::Point(approx_con[3].x,approx_con[3].y));
-                        sqa[s1].push_back(cv::Point(approx_con[2].x,approx_con[2].y));
-                        sqa[s1].push_back(cv::Point(approx_con[1].x,approx_con[1].y));
+                        // 新しいベクターを作成し、approx_conをコピー
+                        std::vector<cv::Point> new_square = approx_con;
+                        // sqaの末尾に新しい四角形を追加
+                        sqa.push_back(new_square);
+
                         drawContours(mask0,contours0,k,Scalar(255),FILLED);
-                      //sqa[s1].push_back(approx_con);// この部分不完全６－２１
                         s1++;s3++;
-                        //polylines(img1, approx_con, true, Scalar(0, 0, 255), 2);//
                     }
-                  }
-                  if (approx_con.size() > 4 ){
-                      approxPolyDP(approx_con, approx_con1, arcLength(approx_con, true)*0.005, true);
-                      if ((approx_con1.size() == 4 ) && (area2 < SQmax)){
+                }
+                
+                // convexHullの結果が4つより多くの頂点を持つ場合
+                if (approx_con.size() > 4 ){
+                    approxPolyDP(approx_con, approx_con1, arcLength(approx_con, true)*0.005, true);
+                    if ((approx_con1.size() == 4 ) && (area2 < SQmax)){
                         maxCosine = 0;
                         for( int j = 0; j < 4; j++ )
-                            {
-                                //cosine = fabs(a_angle(approx[j%4], approx[j-2], approx[j-1]));
-                                cosine = fabs(a_angle(approx_con1[j], approx_con1[(j+2)%4], approx_con1[(j+3)%4]));
-                                maxCosine = MAX(maxCosine, cosine);
-                              }
+                        {
+                            cosine = fabs(a_angle(approx_con1[j], approx_con1[(j+2)%4], approx_con1[(j+3)%4]));
+                            maxCosine = MAX(maxCosine, cosine);
+                        }
                         int check = sqch(approx_con1);
                         if(( maxCosine < MCosine )&&(check == 0)){
-                        //  printf("Q3 \n");
-                        //if( maxCosine < MCosine ){
-                              sqa[s1].push_back(cv::Point(approx_con1[0].x,approx_con1[0].y));
-                              sqa[s1].push_back(cv::Point(approx_con1[1].x,approx_con1[1].y));
-                              sqa[s1].push_back(cv::Point(approx_con1[2].x,approx_con1[2].y));
-                              sqa[s1].push_back(cv::Point(approx_con1[3].x,approx_con1[3].y));
-
-                          //drawContours(mask0,sqa,-1,Scalar(255),CV_FILLED);
-                          drawContours(mask0,contours0,k,Scalar(255),FILLED);
-                          s1++;s4++;
+                            // 新しいベクターを作成し、approx_con1をコピー
+                            std::vector<cv::Point> new_square = approx_con1;
+                            // sqaの末尾に新しい四角形を追加
+                            sqa.push_back(new_square);
+                            
+                            drawContours(mask0,contours0,k,Scalar(255),FILLED);
+                            s1++;s4++;
                         }
-                      }
-                  }
-              }
+                    }
+                }
+            }
         }
     }
+//    for( size_t k = 0; k < contours0.size(); k++ )
+//    {
+//        if (s1 > 10) break;
+//        area = contourArea(contours0[k]);
+//        if (area >SQmin && area < SQmax){// 25000  95000
+//            approxPolyDP(Mat(contours0[k]), approx, arcLength(Mat(contours0[k]), true)*0.01, true);// 0.01
+//            aps = approx.size();
+//
+//    //    printf("APS=%d ",aps);
+//              if (aps == 4 ){// 左右周りは不明6-13
+//                  maxCosine = 0;
+//                  for( int j = 0; j < 4; j++ )
+//                      {
+//                          cosine = fabs(a_angle(approx[j], approx[(j+2)%4], approx[(j+3)%4]));
+//                          maxCosine = MAX(maxCosine, cosine);
+//                        }
+//                  int check = sqch(approx);
+//                  if(( maxCosine < MCosine )&&(check == 0)){
+//                    //    printf("Q1 \n");
+//                       sqa[s1].push_back(cv::Point(approx[0].x, approx[0].y));
+//                       sqa[s1].push_back(cv::Point(approx[1].x, approx[1].y));
+//                       sqa[s1].push_back(cv::Point(approx[2].x, approx[2].y));
+//                       sqa[s1].push_back(cv::Point(approx[3].x, approx[3].y));
+//                        // 右周りの座標?
+//                      drawContours(mask0,contours0,k,Scalar(255),FILLED);
+//                      s1++;s2++;
+//                  }
+//              }
+//              if ((aps > 4 )&&(aps <= 20 )){// 20は適当　検討要する？１０にしたらダメ？２－４
+//              //convexHull(approx, approx_con);
+//                  convexHull(Mat(contours0[k]), approx_con);
+//                  area2 = contourArea(approx_con);
+//                  if ((approx_con.size() == 4 ) && (area2 < SQmax)){
+//                    maxCosine = 0;
+//                    for( int j = 0; j < 4; j++ )
+//                        {
+//                            //cosine = fabs(a_angle(approx_con[j%4], approx_con[j-2], approx_con[j-1]));
+//                            cosine = fabs(a_angle(approx_con[j], approx_con[(j+2)%4], approx_con[(j+3)%4]));
+//                            maxCosine = MAX(maxCosine, cosine);
+//                          }
+//                    int check = sqch(approx_con);
+//                    if(( maxCosine < MCosine )&&(check == 0)){
+//                    //  printf("Q2 \n");
+//                        sqa[s1].push_back(cv::Point(approx_con[0].x,approx_con[0].y));
+//                        sqa[s1].push_back(cv::Point(approx_con[3].x,approx_con[3].y));
+//                        sqa[s1].push_back(cv::Point(approx_con[2].x,approx_con[2].y));
+//                        sqa[s1].push_back(cv::Point(approx_con[1].x,approx_con[1].y));
+//                        drawContours(mask0,contours0,k,Scalar(255),FILLED);
+//                      //sqa[s1].push_back(approx_con);// この部分不完全６－２１
+//                        s1++;s3++;
+//                        //polylines(img1, approx_con, true, Scalar(0, 0, 255), 2);//
+//                    }
+//                  }
+//                  if (approx_con.size() > 4 ){
+//                      approxPolyDP(approx_con, approx_con1, arcLength(approx_con, true)*0.005, true);
+//                      if ((approx_con1.size() == 4 ) && (area2 < SQmax)){
+//                        maxCosine = 0;
+//                        for( int j = 0; j < 4; j++ )
+//                            {
+//                                //cosine = fabs(a_angle(approx[j%4], approx[j-2], approx[j-1]));
+//                                cosine = fabs(a_angle(approx_con1[j], approx_con1[(j+2)%4], approx_con1[(j+3)%4]));
+//                                maxCosine = MAX(maxCosine, cosine);
+//                              }
+//                        int check = sqch(approx_con1);
+//                        if(( maxCosine < MCosine )&&(check == 0)){
+//                        //  printf("Q3 \n");
+//                        //if( maxCosine < MCosine ){
+//                              sqa[s1].push_back(cv::Point(approx_con1[0].x,approx_con1[0].y));
+//                              sqa[s1].push_back(cv::Point(approx_con1[1].x,approx_con1[1].y));
+//                              sqa[s1].push_back(cv::Point(approx_con1[2].x,approx_con1[2].y));
+//                              sqa[s1].push_back(cv::Point(approx_con1[3].x,approx_con1[3].y));
+//
+//                          //drawContours(mask0,sqa,-1,Scalar(255),CV_FILLED);
+//                          drawContours(mask0,contours0,k,Scalar(255),FILLED);
+//                          s1++;s4++;
+//                        }
+//                      }
+//                  }
+//              }
+//        }
+//    }
     //imshow("adp-Mask0-approx",mask0);
     //////////////////以下　黄色領域抽出　////////////////////////////////////////
 
@@ -470,10 +623,11 @@ static int findSq( const Mat& image, const Mat& imageGR, vector<vector<cv::Point
             approxPolyDP(Mat(contours1[k]), approx, arcLength(Mat(contours1[k]), true)*0.01, true);// 0.01 0.05以下で
             aps = approx.size();
 
-            if (aps == 4 && s < 10){
+            // 2025/7/30
+            if (aps == 4 && s < 10) {
                 //std::cout << approx; // 上から右周りの座標
                 // Four corners of source image
-                maxCosine = 0;                   //// 角度のチェック
+                maxCosine = 0; ///// 角度のチェック
                 for( int j = 0; j < 4; j++ )
                 {
                     //cosine = fabs(a_angle(approx[j%4], approx[j-2], approx[j-1]));
@@ -482,15 +636,41 @@ static int findSq( const Mat& image, const Mat& imageGR, vector<vector<cv::Point
                 }
                 int check = sqch(approx);
                 if(( maxCosine < MCosine )&&(check == 0)){
-                    //if( maxCosine < MCosine ){                  ////// 角度のチェック
-                    sq[s].push_back(cv::Point(approx[0].x, approx[0].y));
-                    sq[s].push_back(cv::Point(approx[1].x, approx[1].y));
-                    sq[s].push_back(cv::Point(approx[2].x, approx[2].y));
-                    sq[s].push_back(cv::Point(approx[3].x, approx[3].y));// 修正
+                    //if( maxCosine < MCosine ){ ///// 角度のチェック
+                    
+                    // 新しい四角形のためのベクターを作成し、approxの頂点をコピー
+                    std::vector<cv::Point> new_square = approx;
+                    
+                    // sqの末尾に新しい四角形を追加
+                    sq.push_back(new_square);
 
-                    s++;s3++;
+                    // sをsqの実際のサイズに同期させる
+                    s = (int)sq.size();
+                    s3++;
                 }
             }
+            
+//            if (aps == 4 && s < 10){
+//                //std::cout << approx; // 上から右周りの座標
+//                // Four corners of source image
+//                maxCosine = 0;                   //// 角度のチェック
+//                for( int j = 0; j < 4; j++ )
+//                {
+//                    //cosine = fabs(a_angle(approx[j%4], approx[j-2], approx[j-1]));
+//                    cosine = fabs(a_angle(approx[j], approx[(j+2)%4], approx[(j+3)%4]));
+//                    maxCosine = MAX(maxCosine, cosine);
+//                }
+//                int check = sqch(approx);
+//                if(( maxCosine < MCosine )&&(check == 0)){
+//                    //if( maxCosine < MCosine ){                  ////// 角度のチェック
+//                    sq[s].push_back(cv::Point(approx[0].x, approx[0].y));
+//                    sq[s].push_back(cv::Point(approx[1].x, approx[1].y));
+//                    sq[s].push_back(cv::Point(approx[2].x, approx[2].y));
+//                    sq[s].push_back(cv::Point(approx[3].x, approx[3].y));// 修正
+//
+//                    s++;s3++;
+//                }
+//            }
             //////if (aps > 4 && aps < 9 && s < 10){/////////////////
             if (aps > 4 && s < 10){
 
@@ -508,160 +688,350 @@ static int findSq( const Mat& image, const Mat& imageGR, vector<vector<cv::Point
                         maxCosine = MAX(maxCosine, cosine);
                     }
                     int check = sqch(approx_con);
-                    if(( maxCosine < MCosine )&&(check == 0)){
-                        sq[s].push_back(cv::Point(approx_con[0].x, approx_con[0].y));
-                        sq[s].push_back(cv::Point(approx_con[1].x, approx_con[1].y));
-                        sq[s].push_back(cv::Point(approx_con[2].x, approx_con[2].y));
-                        sq[s].push_back(cv::Point(approx_con[3].x, approx_con[3].y));
+                    
+                    // 2025/7/30 修正
+                    if ((maxCosine < MCosine) && (check == 0)) {
+                        // 新しい四角形のためのベクターを作成し、approx_conの頂点をコピー
+                        std::vector<cv::Point> new_square = approx_con;
 
-                        s++;s3++;
+                        // sqの末尾に新しい四角形を追加
+                        sq.push_back(new_square);
+
+                        // sをsqの実際のサイズに同期させる
+                        s = (int)sq.size();
+                        s3++;
                     }
+//                    if(( maxCosine < MCosine )&&(check == 0)){
+//                        sq[s].push_back(cv::Point(approx_con[0].x, approx_con[0].y));
+//                        sq[s].push_back(cv::Point(approx_con[1].x, approx_con[1].y));
+//                        sq[s].push_back(cv::Point(approx_con[2].x, approx_con[2].y));
+//                        sq[s].push_back(cv::Point(approx_con[3].x, approx_con[3].y));
+//
+//                        s++;s3++;
+//                    }
+                    
                 }
                 ////if ((aps2 > 4)&&(aps2 < 9)&&(area2 < SQmax)){////////*********************
-                if ((aps2 > 4)&&(area2 < SQmax)){
-                    //approxPolyDP(Mat(contours[k]), approx_con1, arcLength(Mat(contours[k]), true)*0.05, true);// 0.05
-                    approxPolyDP(approx_con, approx_con1, arcLength(Mat(contours1[k]), true)*0.005, true);
-                    //////// 0.01 で４か５角形 0.005 が一番良いか？2-20
-                    if ((approx_con1.size() == 4 && s < 10)&&(area2 < SQmax)){
+                ///
+                // 2025/7/30 修正
+                if (aps > 4 && s < 10){
+                    convexHull(approx, approx_con);
+                    // convexHull(Mat(contours[k]),approx_con);// 上と比較して全体で個数が減る？3-5
+                    // 0.1とかに大きくするとsizeが２とかになる？？？？1-31
+                    area2 = contourArea(approx_con);
+                    aps2 = approx_con.size();
+                    
+                    // 最初の四角形処理ブロック
+                    if ((aps2 == 4) && (area2 < SQmax)){
                         maxCosine = 0;
                         for( int j = 0; j < 4; j++ )
                         {
-                            //cosine = fabs(a_angle(approx_con1[j%4], approx_con1[j-2], approx_con1[j-1]));
-                            cosine = fabs(a_angle(approx_con1[j], approx_con1[(j+2)%4], approx_con1[(j+3)%4]));
+                            // cosine = fabs(a_angle(approx_con[j%4], approx_con[j-2], approx_con[j-1]));
+                            cosine = fabs(a_angle(approx_con[j], approx_con[(j+2)%4], approx_con[(j+3)%4]));
                             maxCosine = MAX(maxCosine, cosine);
                         }
-                        int check = sqch(approx_con1);
+                        int check = sqch(approx_con);
                         if(( maxCosine < MCosine )&&(check == 0)){
-                            sq[s].push_back(cv::Point(approx_con1[0].x, approx_con1[0].y));
-                            sq[s].push_back(cv::Point(approx_con1[1].x, approx_con1[1].y));
-                            sq[s].push_back(cv::Point(approx_con1[2].x, approx_con1[2].y));
-                            sq[s].push_back(cv::Point(approx_con1[3].x, approx_con1[3].y));
-                            s++;s3++;
+                            // 新しいベクターを作成し、approx_conの頂点をコピー
+                            std::vector<cv::Point> new_square = approx_con;
+                            // sqの末尾に新しい四角形を追加
+                            sq.push_back(new_square);
+                            // sとs3を更新
+                            s = (int)sq.size();
+                            s3++;
                         }
                     }
-                    if ((approx_con1.size() == 5 && s < 10)&&(area2 < SQmax)){
-                        vector<cv::Point> quad;
-                        Get_quad( approx_con1, quad);
-                        maxCosine = 0;
-                        for( int j = 0; j < 4; j++ )
-                        {
-                            //cosine = fabs(a_angle(quad[j%4], quad[j-2], quad[j-1]));
-                            cosine = fabs(a_angle(quad[j], quad[(j+2)%4], quad[(j+3)%4]));
-                            maxCosine = MAX(maxCosine, cosine);
+                    
+                    // 2つ目の四角形処理ブロック（aps2 > 4 の場合）
+                    if ((aps2 > 4) && (area2 < SQmax)){
+                        approxPolyDP(approx_con, approx_con1, arcLength(Mat(contours1[k]), true)*0.005, true);
+                        // 0.01 で４か５角形 0.005 が一番良いか？2-20
+                        
+                        // approx_con1が4つの頂点を持つ場合
+                        if ((approx_con1.size() == 4 && s < 10) && (area2 < SQmax)){
+                            maxCosine = 0;
+                            for( int j = 0; j < 4; j++ )
+                            {
+                                cosine = fabs(a_angle(approx_con1[j], approx_con1[(j+2)%4], approx_con1[(j+3)%4]));
+                                maxCosine = MAX(maxCosine, cosine);
+                            }
+                            int check = sqch(approx_con1);
+                            if(( maxCosine < MCosine )&&(check == 0)){
+                                // 新しいベクターを作成し、approx_con1の頂点をコピー
+                                std::vector<cv::Point> new_square = approx_con1;
+                                // sqの末尾に新しい四角形を追加
+                                sq.push_back(new_square);
+                                // sとs3を更新
+                                s = (int)sq.size();
+                                s3++;
+                            }
                         }
-                        int check = sqch(quad);
-                        if(( maxCosine < MCosine )&&(check == 0)){
-                            sq[s].push_back(cv::Point(quad[0].x, quad[0].y));
-                            sq[s].push_back(cv::Point(quad[1].x, quad[1].y));
-                            sq[s].push_back(cv::Point(quad[2].x, quad[2].y));
-                            sq[s].push_back(cv::Point(quad[3].x, quad[3].y));// 修正
-                            s++;s3++;
+                        
+                        // approx_con1が5つの頂点を持つ場合
+                        if ((approx_con1.size() == 5 && s < 10) && (area2 < SQmax)){
+                            vector<cv::Point> quad;
+                            Get_quad( approx_con1, quad);
+                            maxCosine = 0;
+                            for( int j = 0; j < 4; j++ )
+                            {
+                                cosine = fabs(a_angle(quad[j], quad[(j+2)%4], quad[(j+3)%4]));
+                                maxCosine = MAX(maxCosine, cosine);
+                            }
+                            int check = sqch(quad);
+                            if(( maxCosine < MCosine )&&(check == 0)){
+                                // 新しいベクターを作成し、quadの頂点をコピー
+                                std::vector<cv::Point> new_square = quad;
+                                // sqの末尾に新しい四角形を追加
+                                sq.push_back(new_square);
+                                // sとs3を更新
+                                s = (int)sq.size();
+                                s3++;
+                            }
                         }
                     }
                 }
+//                if ((aps2 > 4)&&(area2 < SQmax)){
+//                    //approxPolyDP(Mat(contours[k]), approx_con1, arcLength(Mat(contours[k]), true)*0.05, true);// 0.05
+//                    approxPolyDP(approx_con, approx_con1, arcLength(Mat(contours1[k]), true)*0.005, true);
+//                    //////// 0.01 で４か５角形 0.005 が一番良いか？2-20
+//                    if ((approx_con1.size() == 4 && s < 10)&&(area2 < SQmax)){
+//                        maxCosine = 0;
+//                        for( int j = 0; j < 4; j++ )
+//                        {
+//                            //cosine = fabs(a_angle(approx_con1[j%4], approx_con1[j-2], approx_con1[j-1]));
+//                            cosine = fabs(a_angle(approx_con1[j], approx_con1[(j+2)%4], approx_con1[(j+3)%4]));
+//                            maxCosine = MAX(maxCosine, cosine);
+//                        }
+//                        int check = sqch(approx_con1);
+//                        if(( maxCosine < MCosine )&&(check == 0)){
+//                            sq[s].push_back(cv::Point(approx_con1[0].x, approx_con1[0].y));
+//                            sq[s].push_back(cv::Point(approx_con1[1].x, approx_con1[1].y));
+//                            sq[s].push_back(cv::Point(approx_con1[2].x, approx_con1[2].y));
+//                            sq[s].push_back(cv::Point(approx_con1[3].x, approx_con1[3].y));
+//                            s++;s3++;
+//                        }
+//                    }
+//                    if ((approx_con1.size() == 5 && s < 10)&&(area2 < SQmax)){
+//                        vector<cv::Point> quad;
+//                        Get_quad( approx_con1, quad);
+//                        maxCosine = 0;
+//                        for( int j = 0; j < 4; j++ )
+//                        {
+//                            //cosine = fabs(a_angle(quad[j%4], quad[j-2], quad[j-1]));
+//                            cosine = fabs(a_angle(quad[j], quad[(j+2)%4], quad[(j+3)%4]));
+//                            maxCosine = MAX(maxCosine, cosine);
+//                        }
+//                        int check = sqch(quad);
+//                        if(( maxCosine < MCosine )&&(check == 0)){
+//                            sq[s].push_back(cv::Point(quad[0].x, quad[0].y));
+//                            sq[s].push_back(cv::Point(quad[1].x, quad[1].y));
+//                            sq[s].push_back(cv::Point(quad[2].x, quad[2].y));
+//                            sq[s].push_back(cv::Point(quad[3].x, quad[3].y));// 修正
+//                            s++;s3++;
+//                        }
+//                    }
+//                }
             }
         }
     }
     //////////////////////////////////////////////////////
+    ///
+    // 2025/7/30 修正
     for( size_t k = 0; k < contours.size(); k++ )
     {
         if (s > 9) break;
         area = contourArea(contours[k]);
 
-        if (area > SQmin && area < SQmax){// orignal
-            approxPolyDP(Mat(contours[k]), approx, arcLength(Mat(contours[k]), true)*0.01, true);// 0.01 0.05以下で
+        if (area > SQmin && area < SQmax) { // orignal
+            approxPolyDP(Mat(contours[k]), approx, arcLength(Mat(contours[k]), true) * 0.01, true); // 0.01 0.05以下で
             aps = approx.size();
 
-            if (aps == 4 && s < 10){
+            if (aps == 4 && s < 10) {
                 //std::cout << approx; // 上から右周りの座標
                 // Four corners of source image
-                maxCosine = 0;                   //// 角度のチェック
+                maxCosine = 0; ///// 角度のチェック
                 for( int j = 0; j < 4; j++ )
                 {
-                    cosine = fabs(a_angle(approx[j], approx[(j+2)%4], approx[(j+3)%4]));
+                    cosine = fabs(a_angle(approx[j], approx[(j + 2) % 4], approx[(j + 3) % 4]));
                     maxCosine = MAX(maxCosine, cosine);
                 }
                 int check = sqch(approx);
-                if(( maxCosine < MCosine )&&(check == 0)){
-                    sq[s].push_back(cv::Point(approx[0].x, approx[0].y));
-                    sq[s].push_back(cv::Point(approx[1].x, approx[1].y));
-                    sq[s].push_back(cv::Point(approx[2].x, approx[2].y));
-                    sq[s].push_back(cv::Point(approx[3].x, approx[3].y));// 修正
-                    s++;s2++;
+                if(( maxCosine < MCosine ) && (check == 0)){
+                    // 新しい四角形のためのベクターを作成し、approxをコピー
+                    std::vector<cv::Point> new_square = approx;
+
+                    // sqの末尾に新しい四角形を追加
+                    sq.push_back(new_square);
+
+                    // sとs2を更新
+                    s = (int)sq.size(); // sをsqの実際のサイズに同期させる
+                    s2++;
                 }
             }
+//
+
             /////if (aps > 4 && aps < 9 && s < 10){////＊＊＊＊＊＊＊＊
-            if (aps > 4 && s < 10){
-                convexHull(approx,approx_con);// 凸図形に
-                //convexHull(Mat(contours[k]),approx_con);// 上と比較して全体で個数が減る？3-5
-                //// 0.1とかに大きくするとsizeが２とかになる？？？？1-31
+            ///
+            ///
+            ///
+            // 2025/7/30
+            if (aps > 4 && s < 10) {
+                convexHull(approx, approx_con);
+                // convexHull(Mat(contours[k]),approx_con);// 上と比較して全体で個数が減る？3-5
+                // 0.1とかに大きくするとsizeが２とかになる？？？？1-31
                 area2 = contourArea(approx_con);
                 aps2 = approx_con.size();
-                if ((aps2 == 4)&&(area2 < SQmax)){
+
+                // 最初の四角形処理ブロック
+                // aps2 == 4の場合に四角形を保存
+                if ((aps2 == 4) && (area2 < SQmax)) {
                     maxCosine = 0;
-                    for( int j = 0; j < 4; j++ )
-                    {
-                        //cosine = fabs(a_angle(approx_con[j%4], approx_con[j-2], approx_con[j-1]));
-                        cosine = fabs(a_angle(approx_con[j], approx_con[(j+2)%4], approx_con[(j+3)%4]));
+                    for (int j = 0; j < 4; j++) {
+                        // cosine = fabs(a_angle(approx_con[j%4], approx_con[j-2], approx_con[j-1]));
+                        cosine = fabs(a_angle(approx_con[j], approx_con[(j + 2) % 4], approx_con[(j + 3) % 4]));
                         maxCosine = MAX(maxCosine, cosine);
                     }
                     int check = sqch(approx_con);
-                    if(( maxCosine < MCosine )&&(check == 0)){
-                        sq[s].push_back(cv::Point(approx_con[0].x, approx_con[0].y));
-                        sq[s].push_back(cv::Point(approx_con[1].x, approx_con[1].y));
-                        sq[s].push_back(cv::Point(approx_con[2].x, approx_con[2].y));
-                        sq[s].push_back(cv::Point(approx_con[3].x, approx_con[3].y));
-
-                        s++;s2++;
+                    if ((maxCosine < MCosine) && (check == 0)) {
+                        // 新しいベクターを作成し、approx_conの頂点をコピー
+                        std::vector<cv::Point> new_square = approx_con;
+                        // sqの末尾に新しい四角形を追加
+                        sq.push_back(new_square);
+                        // sとs3を更新
+                        s = (int)sq.size();
+                        s3++;
                     }
                 }
-                /////// if ((aps2 > 4)&&(aps2 < 9)&&(area2 < SQmax)){//////＊＊＊＊＊＊＊＊
-                if ((aps2 > 4)&&(area2 < SQmax)){
-                    //approxPolyDP(Mat(contours[k]), approx_con1, arcLength(Mat(contours[k]), true)*0.05, true);// 0.05
-                    approxPolyDP(approx_con, approx_con1, arcLength(Mat(contours[k]), true)*0.005, true);
-                    //////// 0.01 で４か５角形 0.005 が一番良いか？2-20
-                    if ((approx_con1.size() == 4 && s < 10)&&(area2 < SQmax)){
+
+                // 2つ目の四角形処理ブロック（aps2 > 4 の場合）
+                if ((aps2 > 4) && (area2 < SQmax)) {
+                    approxPolyDP(approx_con, approx_con1, arcLength(Mat(contours[k]), true) * 0.005, true);
+                    // 0.01 で４か５角形 0.005 が一番良いか？2-20
+                    
+                    // approx_con1が4つの頂点を持つ場合
+                    // この部分も同様に安全な`push_back`に置き換えます。
+                    if ((approx_con1.size() == 4 && s < 10) && (area2 < SQmax)) {
                         maxCosine = 0;
-                        for( int j = 0; j < 4; j++ )
-                        {
-                            //cosine = fabs(a_angle(approx_con1[j%4], approx_con1[j-2], approx_con1[j-1]));
-                            cosine = fabs(a_angle(approx_con1[j], approx_con1[(j+2)%4], approx_con1[(j+3)%4]));
+                        for (int j = 0; j < 4; j++) {
+                            cosine = fabs(a_angle(approx_con1[j], approx_con1[(j + 2) % 4], approx_con1[(j + 3) % 4]));
                             maxCosine = MAX(maxCosine, cosine);
                         }
                         int check = sqch(approx_con1);
-                        if(( maxCosine < MCosine )&&(check == 0)){
-                            //if( maxCosine < MCosine ){
-                            sq[s].push_back(cv::Point(approx_con1[0].x, approx_con1[0].y));
-                            sq[s].push_back(cv::Point(approx_con1[1].x, approx_con1[1].y));
-                            sq[s].push_back(cv::Point(approx_con1[2].x, approx_con1[2].y));
-                            sq[s].push_back(cv::Point(approx_con1[3].x, approx_con1[3].y));
-                            s++;s2++;
-                            // polylines(image, approx_con1, true, Scalar(0, 0, 255), 2);//
-                        }
-                    }
-                    if ((approx_con1.size() == 5 && s < 10)&&(area2 < SQmax)){
-                        vector<cv::Point> quad;
-                        Get_quad( approx_con1, quad);
-                        maxCosine = 0;
-                        for( int j = 0; j < 4; j++ )
-                        {
-                            cosine = fabs(a_angle(quad[j], quad[(j+2)%4], quad[(j+3)%4]));
-                            maxCosine = MAX(maxCosine, cosine);
-                        }
-                        int check = sqch(quad);
-                        if(( maxCosine < MCosine )&&(check == 0)){
-                            //if( maxCosine < MCosine ){
-                            //std::cout << quad;
-                            sq[s].push_back(cv::Point(quad[0].x, quad[0].y));
-                            sq[s].push_back(cv::Point(quad[1].x, quad[1].y));
-                            sq[s].push_back(cv::Point(quad[2].x, quad[2].y));
-                            sq[s].push_back(cv::Point(quad[3].x, quad[3].y));// 修正
-                            // polylines(image, quad, true, Scalar(0, 0, 255), 2);//red
-                            s++;s2++;
+                        if ((maxCosine < MCosine) && (check == 0)) {
+                            // 新しいベクターを作成し、approx_con1の頂点をコピー
+                            std::vector<cv::Point> new_square = approx_con1;
+                            // sqの末尾に新しい四角形を追加
+                            sq.push_back(new_square);
+                            // sとs2を更新
+                            s = (int)sq.size();
+                            s2++;
                         }
                     }
                 }
             }
+            
+//    for( size_t k = 0; k < contours.size(); k++ )
+//    {
+//        if (s > 9) break;
+//        area = contourArea(contours[k]);
+//
+//        if (area > SQmin && area < SQmax){// orignal
+//            approxPolyDP(Mat(contours[k]), approx, arcLength(Mat(contours[k]), true)*0.01, true);// 0.01 0.05以下で
+//            aps = approx.size();
+//
+//            if (aps == 4 && s < 10){
+//                //std::cout << approx; // 上から右周りの座標
+//                // Four corners of source image
+//                maxCosine = 0;                   //// 角度のチェック
+//                for( int j = 0; j < 4; j++ )
+//                {
+//                    cosine = fabs(a_angle(approx[j], approx[(j+2)%4], approx[(j+3)%4]));
+//                    maxCosine = MAX(maxCosine, cosine);
+//                }
+//                int check = sqch(approx);
+//                if(( maxCosine < MCosine )&&(check == 0)){
+//                    sq[s].push_back(cv::Point(approx[0].x, approx[0].y));
+//                    sq[s].push_back(cv::Point(approx[1].x, approx[1].y));
+//                    sq[s].push_back(cv::Point(approx[2].x, approx[2].y));
+//                    sq[s].push_back(cv::Point(approx[3].x, approx[3].y));// 修正
+//                    s++;s2++;
+//                }
+//            }
+//            if (aps > 4 && s < 10){
+//                convexHull(approx,approx_con);// 凸図形に
+//                //convexHull(Mat(contours[k]),approx_con);// 上と比較して全体で個数が減る？3-5
+//                //// 0.1とかに大きくするとsizeが２とかになる？？？？1-31
+//                area2 = contourArea(approx_con);
+//                aps2 = approx_con.size();
+//                if ((aps2 == 4)&&(area2 < SQmax)){
+//                    maxCosine = 0;
+//                    for( int j = 0; j < 4; j++ )
+//                    {
+//                        //cosine = fabs(a_angle(approx_con[j%4], approx_con[j-2], approx_con[j-1]));
+//                        cosine = fabs(a_angle(approx_con[j], approx_con[(j+2)%4], approx_con[(j+3)%4]));
+//                        maxCosine = MAX(maxCosine, cosine);
+//                    }
+//                    int check = sqch(approx_con);
+//                    if(( maxCosine < MCosine )&&(check == 0)){
+//                        sq[s].push_back(cv::Point(approx_con[0].x, approx_con[0].y));
+//                        sq[s].push_back(cv::Point(approx_con[1].x, approx_con[1].y));
+//                        sq[s].push_back(cv::Point(approx_con[2].x, approx_con[2].y));
+//                        sq[s].push_back(cv::Point(approx_con[3].x, approx_con[3].y));
+//
+//                        s++;s2++;
+//                    }
+//                }
+                /////// if ((aps2 > 4)&&(aps2 < 9)&&(area2 < SQmax)){//////＊＊＊＊＊＊＊＊
+                ///
+        
+//                if ((aps2 > 4)&&(area2 < SQmax)){
+//                    //approxPolyDP(Mat(contours[k]), approx_con1, arcLength(Mat(contours[k]), true)*0.05, true);// 0.05
+//                    approxPolyDP(approx_con, approx_con1, arcLength(Mat(contours[k]), true)*0.005, true);
+//                    //////// 0.01 で４か５角形 0.005 が一番良いか？2-20
+//                    if ((approx_con1.size() == 4 && s < 10)&&(area2 < SQmax)){
+//                        maxCosine = 0;
+//                        for( int j = 0; j < 4; j++ )
+//                        {
+//                            //cosine = fabs(a_angle(approx_con1[j%4], approx_con1[j-2], approx_con1[j-1]));
+//                            cosine = fabs(a_angle(approx_con1[j], approx_con1[(j+2)%4], approx_con1[(j+3)%4]));
+//                            maxCosine = MAX(maxCosine, cosine);
+//                        }
+//                        int check = sqch(approx_con1);
+//                        if(( maxCosine < MCosine )&&(check == 0)){
+//                            //if( maxCosine < MCosine ){
+//                            sq[s].push_back(cv::Point(approx_con1[0].x, approx_con1[0].y));
+//                            sq[s].push_back(cv::Point(approx_con1[1].x, approx_con1[1].y));
+//                            sq[s].push_back(cv::Point(approx_con1[2].x, approx_con1[2].y));
+//                            sq[s].push_back(cv::Point(approx_con1[3].x, approx_con1[3].y));
+//                            s++;s2++;
+//                            // polylines(image, approx_con1, true, Scalar(0, 0, 255), 2);//
+//                        }
+//                    }
+                    
+                    
+//                    if ((approx_con1.size() == 5 && s < 10)&&(area2 < SQmax)){
+//                        vector<cv::Point> quad;
+//                        Get_quad( approx_con1, quad);
+//                        maxCosine = 0;
+//                        for( int j = 0; j < 4; j++ )
+//                        {
+//                            cosine = fabs(a_angle(quad[j], quad[(j+2)%4], quad[(j+3)%4]));
+//                            maxCosine = MAX(maxCosine, cosine);
+//                        }
+//                        int check = sqch(quad);
+//                        if(( maxCosine < MCosine )&&(check == 0)){
+//                            //if( maxCosine < MCosine ){
+//                            //std::cout << quad;
+//                            sq[s].push_back(cv::Point(quad[0].x, quad[0].y));
+//                            sq[s].push_back(cv::Point(quad[1].x, quad[1].y));
+//                            sq[s].push_back(cv::Point(quad[2].x, quad[2].y));
+//                            sq[s].push_back(cv::Point(quad[3].x, quad[3].y));// 修正
+//                            // polylines(image, quad, true, Scalar(0, 0, 255), 2);//red
+//                            s++;s2++;
+//                        }
+//                    }
+                
+            
         }
     }
     //destroyAllWindows();
@@ -687,28 +1057,49 @@ static int Sqcheck(vector<vector<cv::Point> >& sq, int sqindex,vector<vector<cv:
     int x,y,x0,y0;// long から　int へ変更　6-28
 // first
     if ((sqindex==0)&&(sqaindex==0)) return 0;
+    
+    
+    // 2025/7/30 修正
     if (sqindex > 0){
-        Sq[0].push_back(cv::Point(sq[0][0].x, sq[0][0].y));
-        Sq[0].push_back(cv::Point(sq[0][1].x, sq[0][1].y));
-        Sq[0].push_back(cv::Point(sq[0][2].x, sq[0][2].y));
-        Sq[0].push_back(cv::Point(sq[0][3].x, sq[0][3].y));
-        s=1;
-    }else {
-        Sq[0].push_back(cv::Point(sqa[0][0].x, sqa[0][0].y));
-        Sq[0].push_back(cv::Point(sqa[0][1].x, sqa[0][1].y));
-        Sq[0].push_back(cv::Point(sqa[0][2].x, sqa[0][2].y));
-        Sq[0].push_back(cv::Point(sqa[0][3].x, sqa[0][3].y));
-        s=1;
-        ss=1;
+        // sqベクターが空でないことを確認してからアクセス
+        if (!sq.empty()) {
+            // sq[0]ベクター全体をSqの末尾に追加する
+            Sq.push_back(sq[0]);
+        }
+        s = 1;
+    } else {
+        // sqaベクターが空でないことを確認してからアクセス
+        if (!sqa.empty()) {
+            // sqa[0]ベクター全体をSqの末尾に追加する
+            Sq.push_back(sqa[0]);
+        }
+        s = 1;
+        ss = 1;
     }
+//    if (sqindex > 0){
+//        Sq[0].push_back(cv::Point(sq[0][0].x, sq[0][0].y));
+//        Sq[0].push_back(cv::Point(sq[0][1].x, sq[0][1].y));
+//        Sq[0].push_back(cv::Point(sq[0][2].x, sq[0][2].y));
+//        Sq[0].push_back(cv::Point(sq[0][3].x, sq[0][3].y));
+//        s=1;
+//    }else {
+//        Sq[0].push_back(cv::Point(sqa[0][0].x, sqa[0][0].y));
+//        Sq[0].push_back(cv::Point(sqa[0][1].x, sqa[0][1].y));
+//        Sq[0].push_back(cv::Point(sqa[0][2].x, sqa[0][2].y));
+//        Sq[0].push_back(cv::Point(sqa[0][3].x, sqa[0][3].y));
+//        s=1;
+//        ss=1;
+//    }
     //////////////////////////４角形の重心での比較/////////////
-    for (int n=1;n<sqindex; n++){
+    // 2025/7/30 修正
+    // 最初のループ (sqベクターを処理)
+    for (int n=1; n<sqindex; n++){
         x0=0;y0=0;// これがなかったため値が全て加算されていた6-28 以下同じ
         for (int i=0; i<4; i++){
             x0+=(int)sq[n][i].x;// 次のｓｑの重心
             y0+=(int)sq[n][i].y;
         }
-        x0/=4;   y0/=4;
+        x0/=4; y0/=4;
         onaji=0;
         for (int t=0; t<s; t++)// セーブしてあるSq　ｓ個
         {
@@ -717,7 +1108,7 @@ static int Sqcheck(vector<vector<cv::Point> >& sq, int sqindex,vector<vector<cv:
                 x+=(int)Sq[t][i].x;// ｓｑの重心
                 y+=(int)Sq[t][i].y;
             }
-            x/=4;  y/=4;
+            x/=4; y/=4;
             //　セーブしているｓｑの重心の ある範囲以内なら　同一としてブレイク
             if ( (x0+DD >= x)&&(x0 <= x+DD) && (y0+DD >= y)&&(y0 <= y+DD) )
             { onaji=1;
@@ -725,24 +1116,28 @@ static int Sqcheck(vector<vector<cv::Point> >& sq, int sqindex,vector<vector<cv:
             }
         }
         if (onaji==0){
-            Sq[s].push_back(cv::Point(sq[n][0].x, sq[n][0].y));
-            Sq[s].push_back(cv::Point(sq[n][1].x, sq[n][1].y));
-            Sq[s].push_back(cv::Point(sq[n][2].x, sq[n][2].y));
-            Sq[s].push_back(cv::Point(sq[n][3].x, sq[n][3].y));
-            s++;
+            // Sq[s].push_back(...) を削除し、新しい四角形を安全に追加
+            std::vector<cv::Point> new_square = sq[n];
+            Sq.push_back(new_square);
+            s = (int)Sq.size(); // sをSqのサイズに同期させる
         }
     }
+    // もし、Sqに要素がない場合、sが0のままになる可能性があるため、最初の要素は別途追加する必要があります
+    // 例: if (!sq.empty()) Sq.push_back(sq[0]);
+    // 同様に、sqaの最初の要素も
+    // if (!sqa.empty()) Sq.push_back(sqa[0]);
 
-    ///////////////////////次の４角形 adap///////
+    ///////////////////////////////////////次の４角形 adap///////
     if (sqaindex == 0) return s;
 
+    // 2つ目のループ (sqaベクターを処理)
     for (int n=ss; n<sqaindex; n++){
         x0=0;y0=0;
         for (int i=0; i<4; i++){
             x0+=(int)sqa[n][i].x;// 次のｓｑの重心
             y0+=(int)sqa[n][i].y;
         }
-        x0/=4;   y0/=4;
+        x0/=4; y0/=4;
         onaji=0;
         for (int t=0; t<s; t++)// セーブしてあるSq　ｓ個
         {
@@ -751,7 +1146,7 @@ static int Sqcheck(vector<vector<cv::Point> >& sq, int sqindex,vector<vector<cv:
                 x+=(int)Sq[t][i].x;// ｓｑの重心
                 y+=(int)Sq[t][i].y;
             }
-            x/=4;  y/=4;
+            x/=4; y/=4;
             //　セーブしているｓｑの重心の ある範囲以内なら　同一としてブレイク
             if ( (x0+DD > x)&&(x0 < x+DD) && (y0+DD > y)&&(y0 < y+DD) )
             { onaji=1;
@@ -759,14 +1154,81 @@ static int Sqcheck(vector<vector<cv::Point> >& sq, int sqindex,vector<vector<cv:
             }
         }
         if (onaji==0){
-            Sq[s].push_back(cv::Point(sqa[n][0].x, sqa[n][0].y));
-            Sq[s].push_back(cv::Point(sqa[n][1].x, sqa[n][1].y));
-            Sq[s].push_back(cv::Point(sqa[n][2].x, sqa[n][2].y));
-            Sq[s].push_back(cv::Point(sqa[n][3].x, sqa[n][3].y));
+            // Sq[s].push_back(...) を削除し、新しい四角形を安全に追加
+            std::vector<cv::Point> new_square = sqa[n];
+            Sq.push_back(new_square);
             //std::cout << sq[n];
-            s++;
+            s = (int)Sq.size(); // sをSqのサイズに同期させる
         }
     }
+    
+    
+//
+//    for (int n=1;n<sqindex; n++){
+//        x0=0;y0=0;// これがなかったため値が全て加算されていた6-28 以下同じ
+//        for (int i=0; i<4; i++){
+//            x0+=(int)sq[n][i].x;// 次のｓｑの重心
+//            y0+=(int)sq[n][i].y;
+//        }
+//        x0/=4;   y0/=4;
+//        onaji=0;
+//        for (int t=0; t<s; t++)// セーブしてあるSq　ｓ個
+//        {
+//            x=0;y=0;
+//            for (int i=0; i<4; i++){
+//                x+=(int)Sq[t][i].x;// ｓｑの重心
+//                y+=(int)Sq[t][i].y;
+//            }
+//            x/=4;  y/=4;
+//            //　セーブしているｓｑの重心の ある範囲以内なら　同一としてブレイク
+//            if ( (x0+DD >= x)&&(x0 <= x+DD) && (y0+DD >= y)&&(y0 <= y+DD) )
+//            { onaji=1;
+//                break;
+//            }
+//        }
+//        if (onaji==0){
+//            Sq[s].push_back(cv::Point(sq[n][0].x, sq[n][0].y));
+//            Sq[s].push_back(cv::Point(sq[n][1].x, sq[n][1].y));
+//            Sq[s].push_back(cv::Point(sq[n][2].x, sq[n][2].y));
+//            Sq[s].push_back(cv::Point(sq[n][3].x, sq[n][3].y));
+//            s++;
+//        }
+//    }
+//
+//    ///////////////////////次の４角形 adap///////
+//    if (sqaindex == 0) return s;
+//
+//    for (int n=ss; n<sqaindex; n++){
+//        x0=0;y0=0;
+//        for (int i=0; i<4; i++){
+//            x0+=(int)sqa[n][i].x;// 次のｓｑの重心
+//            y0+=(int)sqa[n][i].y;
+//        }
+//        x0/=4;   y0/=4;
+//        onaji=0;
+//        for (int t=0; t<s; t++)// セーブしてあるSq　ｓ個
+//        {
+//            x=0;y=0;
+//            for (int i=0; i<4; i++){
+//                x+=(int)Sq[t][i].x;// ｓｑの重心
+//                y+=(int)Sq[t][i].y;
+//            }
+//            x/=4;  y/=4;
+//            //　セーブしているｓｑの重心の ある範囲以内なら　同一としてブレイク
+//            if ( (x0+DD > x)&&(x0 < x+DD) && (y0+DD > y)&&(y0 < y+DD) )
+//            { onaji=1;
+//                break;
+//            }
+//        }
+//        if (onaji==0){
+//            Sq[s].push_back(cv::Point(sqa[n][0].x, sqa[n][0].y));
+//            Sq[s].push_back(cv::Point(sqa[n][1].x, sqa[n][1].y));
+//            Sq[s].push_back(cv::Point(sqa[n][2].x, sqa[n][2].y));
+//            Sq[s].push_back(cv::Point(sqa[n][3].x, sqa[n][3].y));
+//            //std::cout << sq[n];
+//            s++;
+//        }
+//    }
 
     return s;
 }
@@ -885,70 +1347,149 @@ static int findTr( const Mat& image, const Mat& imageW, vector<vector<cv::Point>
     findContours(mt2, contours2, RETR_LIST, CHAIN_APPROX_SIMPLE);
 
     int t=0;              // 三角形個数
-
+    
+    // 2025/7/30 修正
     for( size_t i = 0; i < contours.size(); i++ )
     {
         if (t > 19) break;
         area = contourArea(contours[i]);
-        if (area > TRmin && area < TRmax){   //画像サイズ640の時100　1000なら200
+        if (area > TRmin && area < TRmax){  //画像サイズ640の時100　1000なら200
             // 直線近似
             approxPolyDP(Mat(contours[i]), approx, arcLength(Mat(contours[i]), true)*0.05, true);//0.05
             //approxPolyDP(Mat(contours[i]), approx, arcLength(Mat(contours[i]), true)*0.02, true);
             if (approx.size() == 3 && t < 20 ){
 
                 polylines(image, approx, true, Scalar(255,0,0), 2);// Test表示はここ
-                //   imshow("TR-Canny", image);
+                // imshow("TR-Canny", image);
+                
                 // Three corners of source image is saved to tr[]
-                tr[t].push_back(cv::Point(approx[0].x, approx[0].y));
-                tr[t].push_back(cv::Point(approx[1].x, approx[1].y));
-                tr[t].push_back(cv::Point(approx[2].x, approx[2].y));
-                t++;
+                // 新しい三角形のためのベクターを作成し、approxの頂点をコピー
+                std::vector<cv::Point> new_triangle = approx;
+
+                // trの末尾に新しい三角形を追加
+                tr.push_back(new_triangle);
+
+                // tをtrの実際のサイズに同期させる
+                t = (int)tr.size();
             }
         }
     }
+
+//    for( size_t i = 0; i < contours.size(); i++ )
+//    {
+//        if (t > 19) break;
+//        area = contourArea(contours[i]);
+//        if (area > TRmin && area < TRmax){   //画像サイズ640の時100　1000なら200
+//            // 直線近似
+//            approxPolyDP(Mat(contours[i]), approx, arcLength(Mat(contours[i]), true)*0.05, true);//0.05
+//            //approxPolyDP(Mat(contours[i]), approx, arcLength(Mat(contours[i]), true)*0.02, true);
+//            if (approx.size() == 3 && t < 20 ){
+//
+//                polylines(image, approx, true, Scalar(255,0,0), 2);// Test表示はここ
+//                //   imshow("TR-Canny", image);
+//                // Three corners of source image is saved to tr[]
+//                tr[t].push_back(cv::Point(approx[0].x, approx[0].y));
+//                tr[t].push_back(cv::Point(approx[1].x, approx[1].y));
+//                tr[t].push_back(cv::Point(approx[2].x, approx[2].y));
+//                t++;
+//            }
+//        }
+//    }
     //////////////////
+    // 2025/7/30 修正
     for( size_t i = 0; i < contours1.size(); i++ )
     {
         if (t > 19) break;
         area = contourArea(contours1[i]);
-        if (area > TRmin && area < TRmax){   //画像サイズ640の時100　1000なら200
+        if (area > TRmin && area < TRmax){ //画像サイズ640の時100　1000なら200
             approxPolyDP(Mat(contours1[i]), approx, arcLength(Mat(contours1[i]), true)*0.05, true);//0.05
             //approxPolyDP(Mat(contours[i]), approx, arcLength(Mat(contours[i]), true)*0.02, true);
             if (approx.size() == 3 && t < 20 ){
                 ///
-
+                
                 polylines(image, approx, true, Scalar(255,0,0), 2);// Test表示はここ
-                //  imshow("TR-Black", image);
+                // imshow("TR-Black", image);
+                
                 // Three corners of source image is saved to tr[]
-                tr[t].push_back(cv::Point(approx[0].x, approx[0].y));
-                tr[t].push_back(cv::Point(approx[1].x, approx[1].y));
-                tr[t].push_back(cv::Point(approx[2].x, approx[2].y));
-                t++;
+                // 新しい三角形のためのベクターを作成し、approxの頂点をコピー
+                std::vector<cv::Point> new_triangle = approx;
+
+                // trの末尾に新しい三角形を追加
+                tr.push_back(new_triangle);
+
+                // tをtrの実際のサイズに同期させる
+                t = (int)tr.size();
             }
         }
     }
-    //////////////////////////////////////////
-    //////////////////
     for( size_t i = 0; i < contours2.size(); i++ )
     {
         if (t > 19) break;
         area = contourArea(contours2[i]);
-        if (area > TRmin && area < TRmax){   //画像サイズ640の時100　1000なら200
+        if (area > TRmin && area < TRmax){  //画像サイズ640の時100　1000なら200
             approxPolyDP(Mat(contours2[i]), approx, arcLength(Mat(contours2[i]), true)*0.05, true);//0.05
             //approxPolyDP(Mat(contours[i]), approx, arcLength(Mat(contours[i]), true)*0.02, true);
             if (approx.size() == 3 && t < 20 ){
                 ///
-
+                
                 polylines(image, approx, true, Scalar(255,0,0), 2);// Test表示はここ
-                //  imshow("TR-White", image);
+                // imshow("TR-White", image);
+                
                 // Three corners of source image is saved to tr[]
-                tr[t].push_back(cv::Point(approx[0].x, approx[0].y));
-                tr[t].push_back(cv::Point(approx[1].x, approx[1].y));
-                tr[t].push_back(cv::Point(approx[2].x, approx[2].y));
-                t++;
+                // 新しい三角形のためのベクターを作成し、approxの頂点をコピー
+                std::vector<cv::Point> new_triangle = approx;
+
+                // trの末尾に新しい三角形を追加
+                tr.push_back(new_triangle);
+
+                // tをtrの実際のサイズに同期させる
+                t = (int)tr.size();
             }
         }
     }
+//
+//    for( size_t i = 0; i < contours1.size(); i++ )
+//    {
+//        if (t > 19) break;
+//        area = contourArea(contours1[i]);
+//        if (area > TRmin && area < TRmax){   //画像サイズ640の時100　1000なら200
+//            approxPolyDP(Mat(contours1[i]), approx, arcLength(Mat(contours1[i]), true)*0.05, true);//0.05
+//            //approxPolyDP(Mat(contours[i]), approx, arcLength(Mat(contours[i]), true)*0.02, true);
+//            if (approx.size() == 3 && t < 20 ){
+//                ///
+//
+//                polylines(image, approx, true, Scalar(255,0,0), 2);// Test表示はここ
+//                //  imshow("TR-Black", image);
+//                // Three corners of source image is saved to tr[]
+//                tr[t].push_back(cv::Point(approx[0].x, approx[0].y));
+//                tr[t].push_back(cv::Point(approx[1].x, approx[1].y));
+//                tr[t].push_back(cv::Point(approx[2].x, approx[2].y));
+//                t++;
+//            }
+//        }
+//    }
+    //////////////////////////////////////////
+    //////////////////
+//    for( size_t i = 0; i < contours2.size(); i++ )
+//    {
+//        if (t > 19) break;
+//        area = contourArea(contours2[i]);
+//        if (area > TRmin && area < TRmax){   //画像サイズ640の時100　1000なら200
+//            approxPolyDP(Mat(contours2[i]), approx, arcLength(Mat(contours2[i]), true)*0.05, true);//0.05
+//            //approxPolyDP(Mat(contours[i]), approx, arcLength(Mat(contours[i]), true)*0.02, true);
+//            if (approx.size() == 3 && t < 20 ){
+//                ///
+//
+//                polylines(image, approx, true, Scalar(255,0,0), 2);// Test表示はここ
+//                //  imshow("TR-White", image);
+//                // Three corners of source image is saved to tr[]
+//                tr[t].push_back(cv::Point(approx[0].x, approx[0].y));
+//                tr[t].push_back(cv::Point(approx[1].x, approx[1].y));
+//                tr[t].push_back(cv::Point(approx[2].x, approx[2].y));
+//                t++;
+//            }
+//        }
+//    }
     /////////////////////////////////////////////
     if (t == 0)  return 0;
     return t;
@@ -1015,15 +1556,30 @@ static int Trcheck(vector<vector<cv::Point> >& tr, int tindex, vector<vector<cv:
                 break;
             }
         }
-        if (onaji==0){
-            Tr[s].push_back(cv::Point(tr[n][0].x, tr[n][0].y));
-            Tr[s].push_back(cv::Point(tr[n][1].x, tr[n][1].y));
-            Tr[s].push_back(cv::Point(tr[n][2].x, tr[n][2].y));
-            //Trf[s] = Trf[n];// Black or White TR
-            //printf("push=%d",n);
-            //  std::cout << tr[n];
-            s++;
+        // 2025/7/30 修正
+        if (onaji == 0) {
+            // 新しい三角形のためのベクターを作成し、tr[n]をコピー
+            std::vector<cv::Point> new_triangle = tr[n];
+
+            // Trの末尾に新しい三角形を追加
+            Tr.push_back(new_triangle);
+
+            // Trf[s] = Trf[n]; の代わりに、安全な方法でTrfに要素を追加
+            // たとえば、Trfもstd::vectorであれば
+            // Trf.push_back(Trf[n]);
+
+            // sをTrの実際のサイズに同期させる
+            s = (int)Tr.size();
         }
+//        if (onaji==0){
+//            Tr[s].push_back(cv::Point(tr[n][0].x, tr[n][0].y));
+//            Tr[s].push_back(cv::Point(tr[n][1].x, tr[n][1].y));
+//            Tr[s].push_back(cv::Point(tr[n][2].x, tr[n][2].y));
+//            //Trf[s] = Trf[n];// Black or White TR
+//            //printf("push=%d",n);
+//            //  std::cout << tr[n];
+//            s++;
+//        }
     }
     return s;
 }
@@ -1364,7 +1920,29 @@ static int FHomo(const Mat& image, vector<vector<cv::Point> >& sq, int sqindex, 
                 Mat im_out;
                 warpPerspective(image, im_out, h, cv::Size(250, 250));
 
+
                 int invmean=0;
+                
+                //2025/12/20 検証
+                long tempCode = Getcode(im_out,gx,gy,invmean,LR);
+                if (tempCode > 0) {
+                    // 成功：青色
+                    polylines(image, sq[n], true, Scalar(255, 0, 0), 3);
+                } else if (tempCode == -2) {
+                    // 三角形が見つからないエラー：黄色
+                    // (変形後の画像の中で▲の位置が特定できていません)
+                    polylines(image, sq[n], true, Scalar(0, 255, 255), 3);
+                } else if (tempCode == -3) {
+                    // 点のカウントエラー：紫色 (Scalarは B, G, R なので 255, 0, 255)
+                    // (▲は見つかったが、点の白黒判定に失敗しています)
+                    polylines(image, sq[n], true, Scalar(255, 0, 255), 3);
+                } else {
+                    // その他のエラー：白色
+                    polylines(image, sq[n], true, Scalar(255, 255, 255), 3);
+                }
+                
+                
+                
                 code[cindex] = Getcode(im_out,gx,gy,invmean,LR);// 三角形の直角頂点を使うかは検討要す
                 invmeanf=invmean;
                 if (code[cindex] > 0){
@@ -1641,7 +2219,10 @@ static long Getcode( const Mat& image, int *X, int *Y,int &invmean, int LR)
     ////////////////////////////////////////////////////
     //////// 三角形直角点 座標
     int ret = GfindTr1(gray,xx,yy,LR);
-    if(ret < 1) return -1;
+    
+    //2025/12/20 検証
+    if(ret < 1) return -2; // ★変更: 三角形が見つからない場合は -2
+    //if(ret < 1) return -1;
     //{ xx=X[0]; yy=Y[0];}// xx yy がとれない場合　旧来の座標使用　・・・return -1 でもよいかも
     //////////////////////////////////////////////
     pyrDown(gray, pyr, cv::Size(image.cols/2, image.rows/2));
@@ -1682,7 +2263,11 @@ static long Getcode( const Mat& image, int *X, int *Y,int &invmean, int LR)
 ////////////////////////////////////////////////////////
     //if ((max < 150) || (max > 350)) return -1;/// max < 450 は大きすぎ?? 2019-2-18
     //if ((max < 120) || (max > 450)) return -1;/// min 150 はちいさい　350から380へ変更　2019-11-4
-    if ((max < 120) || (max > MaxblackPiont)) return -1;/// min 150 はちいさい　450から600へ変更　2020-8
+    
+    //2025/12/20 検証
+    if ((max < 120) || (max > MaxblackPiont)) return -3; // ★変更: 点のカウント失敗は -3
+    //if ((max < 120) || (max > MaxblackPiont)) return -1;/// min 150 はちいさい　450から600へ変更　2020-8
+    
 //////////////////////////////////以下　黒点数により　０か１に変換/////////////////////
     for ( int j=0; j<5; j++)
         for (int k=0; k<5; k++)
@@ -1709,128 +2294,313 @@ static long Getcode( const Mat& image, int *X, int *Y,int &invmean, int LR)
                 break;
         }
     }
-    if (val==0) return -1;
+    //2025/12/20 検証
+    //if (val==0) return -1;
+    if (val==0) return -3;
+    
+    
     return val;
 }
 
 
 // MARK: -- FindTR for Get_Code
 ///////////////////////////New GfindTr1/////add 6*6//////////2022
+//2025/12/20 検証
+// MARK: -- 強化版 GfindTr1 (凸包・全域探索)
 static int GfindTr1( const Mat& gray, int &X, int &Y, int LR )
-{  vector<vector<cv::Point> > contours;
-   vector<vector<cv::Point> > contours1;
-
+{
+    vector<vector<cv::Point> > contours;
     vector<cv::Point> approx;
+    vector<cv::Point> hull;
     Mat element = getStructuringElement(MORPH_RECT, cv::Size(3,3));
-    double area;
-    Mat mt,mt0;
-    //Mat img1 = image.clone();
-    //Mat gray(image.size(), CV_8U);
-    Mat gray0;
-    //Mat grayw(image.size(), CV_8U);
-    long ll[3];
-    int ij;
-    ////////////////////////////////////////////////
-    // Rect rect(X, Y, xl, yl);
-      cv::Rect rect(10,20,80,80);//三角形の場所 X,Yは直角点
-      Mat imgSub(gray, rect);
-      //imshow("imgSub", imgSub);
+    Mat mt, mt0, gray0;
 
-//////////////////////////Canny
-      Canny( imgSub, gray0, 60, 180,3 );
-        //imshow("FT-Canny",gray0);
-      morphologyEx(gray0,mt0,MORPH_CLOSE,element, cv::Point(-1,-1),1);// 三角頂点がつながらないケースあり必要2019-12-29
-        //imshow("Mor-TRCanny",mt0);
+    // 探索範囲を画像全体(250x250)に設定
+    // これにより、射影変換後のわずかなズレも許容します
+    int cropW = gray.cols;
+    int cropH = gray.rows;
 
-        findContours(mt0, contours, RETR_LIST, CHAIN_APPROX_SIMPLE);
+    // 1. エッジ検出（スマホ単体の低コントラストに対応）
+    Canny(gray, gray0, 20, 80, 3);
+    morphologyEx(gray0, mt0, MORPH_CLOSE, element, cv::Point(-1,-1), 1);
+    findContours(mt0, contours, RETR_LIST, CHAIN_APPROX_SIMPLE);
 
-        int t=0;              // 三角形個数
+    int t = 0;
+    for( size_t i = 0; i < contours.size(); i++ )
+    {
+        double area = contourArea(contours[i]);
+        // 面積条件を大幅に緩和 (40 〜 3000)
+        if (area > 40 && area < 3000) {
+            // 凸包処理：ノイズで欠けた輪郭を補完する
+            convexHull(contours[i], hull);
+            // 頂点の近似（0.1まで緩めることで歪みを吸収）
+            approxPolyDP(Mat(hull), approx, arcLength(Mat(hull), true) * 0.1, true);
 
-      for( size_t i = 0; i < contours.size(); i++ )
-      {
-          if (t > 3) break;
-          area = contourArea(contours[i]);
-          //if (area > 300 && area < 600){   //三角画像サイズ　416.7
-          if (area > 200 && area < 600){   //三角画像サイズ変更　6✕6の三角は小さい為
-            // 直線近似
-          //  approxPolyDP(Mat(contours[i]), approx, arcLength(Mat(contours[i]), true)*0.05, true);//0.05
-          approxPolyDP(Mat(contours[i]), approx, arcLength(Mat(contours[i]), true)*0.05, true);
-            if (approx.size() == 3 && t < 4 ){
-                  t++;
-              ////////////// 左上の頂点に最も近い三角形の頂点を探す　直角点　ij
-              if(LR==0){
-                  for(int j=0;j<3;j++)
-                      ll[j] =(int)approx[j].x * (int)approx[j].x + (int)approx[j].y * (int)approx[j].y;
-                  ij = minl_return(ll);
-                  X=(int)approx[ij].x +10;
-                  Y=(int)approx[ij].y +20;
-                  //printf( "\n Canny TR-R X=%d Y=%d \n", X,Y );
-                  return 1;
-              }
-              if(LR==1){// 三角左向き
-                  for(int j=0;j<3;j++)
-                      ll[j] =(80-(int)approx[j].x) * (80-(int)approx[j].x) + (int)approx[j].y * (int)approx[j].y;
-                  ij = minl_return(ll);
-                  //X=(int)approx[ij].x +10 -50;// 三角の左の頂点座標
-                  //X=(int)approx[ij].x +10 -41;// 三角の左の頂点座標
-                  X=(int)approx[ij].x +10;// 直角点とする　2022/01/18
-                  Y=(int)approx[ij].y +20;
-                  //printf( "\n Canny TR-L X=%d Y=%d \n", X,Y );
-                  return 1;
-              }
+            // 頂点数が3〜5個なら「三角形を含む図形」とみなす
+            if (approx.size() >= 3 && approx.size() <= 5) {
+                t++;
+                int ij = 0;
+                long min_dist = -1;
 
-            }
-          }
-        }
-      //////////////////
-      if(t==0){
-        //adaptiveThreshold(gray,mt1,255,ADAPTIVE_THRESH_MEAN_C,THRESH_BINARY_INV,67,35);// 通常の黒三角はこれでOK　従来どおり
-          adaptiveThreshold(imgSub,mt,255,ADAPTIVE_THRESH_MEAN_C,THRESH_BINARY_INV,67,35);
-        //imshow("FT-Adap", mt1);
-        //adaptiveThreshold(imgsub,mt1,255,ADAPTIVE_THRESH_MEAN_C,THRESH_BINARY_INV,41,15);//白三角はこちらの方がよいかも？
-        //imshow("TR-White-41-15", mt1);
-          findContours(mt, contours1, RETR_LIST, CHAIN_APPROX_SIMPLE);
-          for( size_t i = 0; i < contours1.size(); i++ )
-          {
-            if (t > 3) break;
-            area = contourArea(contours1[i]);
-            //if (area > 300 && area < 600){   //画像サイズ640の時100　1000なら200
-            if (area > 200 && area < 600){   //三角画像サイズ変更　6✕6の三角は小さい為
-          //  approxPolyDP(Mat(contours1[i]), approx, arcLength(Mat(contours1[i]), true)*0.05, true);//0.05
-            approxPolyDP(Mat(contours1[i]), approx, arcLength(Mat(contours1[i]), true)*0.05, true);
-              if (approx.size() == 3 && t < 4 ){
-              //printf( "TRA-Area=%f\n", area );
-    //polylines(imgSub, approx, true, Scalar(255), 2);// Test表示はここ
-    //imshow("FT-apl-adap", imgSub);
-                  t++;
-                  if(LR==0){
-                      for(int j=0;j<3;j++)
-                          ll[j] =(int)approx[j].x * (int)approx[j].x + (int)approx[j].y * (int)approx[j].y;
-                      ij = minl_return(ll);
-                      X=(int)approx[ij].x +10;
-                      Y=(int)approx[ij].y +20;
-                      return 1;
-                  }
-                  if(LR==1){
-                      for(int j=0;j<3;j++)
-                          ll[j] =(80-(int)approx[j].x) * (80-(int)approx[j].x) + (int)approx[j].y * (int)approx[j].y;
-                      ij = minl_return(ll);
-                      //X=(int)approx[ij].x +10 -50;// 三角の左の頂点座標
-                      //X=(int)approx[ij].x +10 -41;// 三角の左の頂点座標 直角ではない
-                      X=(int)approx[ij].x +10;// 直角点とする　2022/01/18
-                      Y=(int)approx[ij].y +20;
-                      return 1;
-                  }
-
-              }
+                // 直角頂点の特定
+                for(int j = 0; j < (int)approx.size(); j++) {
+                    long dist;
+                    if (LR == 0) { // 右向き：左上角(0,0)からの距離
+                        dist = (long)approx[j].x * (long)approx[j].x + (long)approx[j].y * (long)approx[j].y;
+                    } else { // 左向き：右上角(cropW,0)からの距離
+                        dist = (long)(cropW - approx[j].x) * (long)(cropW - approx[j].x) + (long)approx[j].y * (long)approx[j].y;
+                    }
+                    
+                    if(min_dist == -1 || dist < min_dist) {
+                        min_dist = dist;
+                        ij = j;
+                    }
+                }
+                X = (int)approx[ij].x;
+                Y = (int)approx[ij].y;
+                return 1; // 1つ見つかれば即座に成功
             }
         }
-      }
-  //////////////////////////////////////////
+    }
 
-    if (t == 0)  return -1;
-  return 0;
+    // 2. Cannyでダメな場合、AdaptiveThresholdで再トライ
+    adaptiveThreshold(gray, mt, 255, ADAPTIVE_THRESH_MEAN_C, THRESH_BINARY_INV, 41, 10);
+    findContours(mt, contours, RETR_LIST, CHAIN_APPROX_SIMPLE);
+    for( size_t i = 0; i < contours.size(); i++ )
+    {
+        double area = contourArea(contours[i]);
+        if (area > 40 && area < 3000) {
+            convexHull(contours[i], hull);
+            approxPolyDP(Mat(hull), approx, arcLength(Mat(hull), true) * 0.1, true);
+            if (approx.size() >= 3 && approx.size() <= 5) {
+                int ij = 0;
+                long min_dist = -1;
+                for(int j = 0; j < (int)approx.size(); j++) {
+                    long dist;
+                    if (LR == 0) dist = (long)approx[j].x * (long)approx[j].x + (long)approx[j].y * (long)approx[j].y;
+                    else dist = (long)(cropW - approx[j].x) * (long)(cropW - approx[j].x) + (long)approx[j].y * (long)approx[j].y;
+                    if(min_dist == -1 || dist < min_dist) { min_dist = dist; ij = j; }
+                }
+                X = (int)approx[ij].x; Y = (int)approx[ij].y;
+                return 1;
+            }
+        }
+    }
+
+    return -1; // 最後まで見つからなければ失敗
 }
+//static int GfindTr1( const Mat& gray, int &X, int &Y, int LR )
+//{  vector<vector<cv::Point> > contours;
+//   vector<vector<cv::Point> > contours1;
+//
+//    vector<cv::Point> approx;
+//    Mat element = getStructuringElement(MORPH_RECT, cv::Size(3,3));
+//    double area;
+//    Mat mt,mt0;
+//    //Mat img1 = image.clone();
+//    //Mat gray(image.size(), CV_8U);
+//    Mat gray0;
+//    //Mat grayw(image.size(), CV_8U);
+//    long ll[3];
+//    int ij;
+//    ////////////////////////////////////////////////
+//    // Rect rect(X, Y, xl, yl);
+//      cv::Rect rect(10,20,80,80);//三角形の場所 X,Yは直角点
+//      Mat imgSub(gray, rect);
+//      //imshow("imgSub", imgSub);
+//
+////////////////////////////Canny
+//      Canny( imgSub, gray0, 60, 180,3 );
+//        //imshow("FT-Canny",gray0);
+//      morphologyEx(gray0,mt0,MORPH_CLOSE,element, cv::Point(-1,-1),1);// 三角頂点がつながらないケースあり必要2019-12-29
+//        //imshow("Mor-TRCanny",mt0);
+//
+//        findContours(mt0, contours, RETR_LIST, CHAIN_APPROX_SIMPLE);
+//
+//        int t=0;              // 三角形個数
+//
+//      for( size_t i = 0; i < contours.size(); i++ )
+//      {
+//          if (t > 3) break;
+//          area = contourArea(contours[i]);
+//          //if (area > 300 && area < 600){   //三角画像サイズ　416.7
+//          if (area > 200 && area < 600){   //三角画像サイズ変更　6✕6の三角は小さい為
+//            // 直線近似
+//          //  approxPolyDP(Mat(contours[i]), approx, arcLength(Mat(contours[i]), true)*0.05, true);//0.05
+//          approxPolyDP(Mat(contours[i]), approx, arcLength(Mat(contours[i]), true)*0.05, true);
+//            // 2025/9/4
+//              if (approx.size() == 3 && t < 4) {
+//                  t++;
+//                  
+//                  // approxが空またはサイズが3未満の場合に備える
+//                  // このif文は、直前の if (approx.size() == 3 ... ) で既にチェック済みなので、
+//                  // ここに重複して置く必要はありません。
+//                  // もし、このコードブロックが別の関数であれば、このガード句は有効です。
+//                  
+//                  // ll ベクターの型をlongに変更し、サイズを事前に確保
+//                  std::vector<long> ll(3);
+//
+//                  if (LR == 0) {
+//                      for(int j = 0; j < 3; j++) {
+//                          ll[j] = (long)approx[j].x * (long)approx[j].x + (long)approx[j].y * (long)approx[j].y;
+//                      }
+//                      ij = minl_return(ll.data());
+//
+//                      // ijが有効なインデックスであることを確認
+//                      if (ij >= 0 && ij < approx.size()) {
+//                          X = (int)approx[ij].x + 10;
+//                          Y = (int)approx[ij].y + 20;
+//                          //printf( "\n Canny TR-R X=%d Y=%d \n", X,Y );
+//                          return 1;
+//                      }
+//                  }
+//
+//                  if (LR == 1) { // 三角左向き
+//                      for(int j = 0; j < 3; j++) {
+//                          ll[j] = (80 - (long)approx[j].x) * (80 - (long)approx[j].x) + (long)approx[j].y * (long)approx[j].y;
+//                      }
+//                      ij = minl_return(ll.data());
+//
+//                      // ijが有効なインデックスであることを確認
+//                      if (ij >= 0 && ij < approx.size()) {
+//                          X = (int)approx[ij].x + 10;
+//                          Y = (int)approx[ij].y + 20;
+//                          //printf( "\n Canny TR-L X=%d Y=%d \n", X,Y );
+//                          return 1;
+//                      }
+//                  }
+//              
+////              if(LR==0){
+////                  for(int j=0;j<3;j++)
+////                      ll[j] =(int)approx[j].x * (int)approx[j].x + (int)approx[j].y * (int)approx[j].y;
+////                  ij = minl_return(ll);
+////                  X=(int)approx[ij].x +10;
+////                  Y=(int)approx[ij].y +20;
+////                  //printf( "\n Canny TR-R X=%d Y=%d \n", X,Y );
+////                  return 1;
+////              }
+////              if(LR==1){// 三角左向き
+////                  for(int j=0;j<3;j++)
+////                      ll[j] =(80-(int)approx[j].x) * (80-(int)approx[j].x) + (int)approx[j].y * (int)approx[j].y;
+////                  ij = minl_return(ll);
+////                  //X=(int)approx[ij].x +10 -50;// 三角の左の頂点座標
+////                  //X=(int)approx[ij].x +10 -41;// 三角の左の頂点座標
+////                  X=(int)approx[ij].x +10;// 直角点とする　2022/01/18
+////                  Y=(int)approx[ij].y +20;
+////                  //printf( "\n Canny TR-L X=%d Y=%d \n", X,Y );
+////                  return 1;
+////              }
+//
+//            }
+//          }
+//        }
+//      //////////////////
+//      if(t==0){
+//        //adaptiveThreshold(gray,mt1,255,ADAPTIVE_THRESH_MEAN_C,THRESH_BINARY_INV,67,35);// 通常の黒三角はこれでOK　従来どおり
+//          adaptiveThreshold(imgSub,mt,255,ADAPTIVE_THRESH_MEAN_C,THRESH_BINARY_INV,67,35);
+//        //imshow("FT-Adap", mt1);
+//        //adaptiveThreshold(imgsub,mt1,255,ADAPTIVE_THRESH_MEAN_C,THRESH_BINARY_INV,41,15);//白三角はこちらの方がよいかも？
+//        //imshow("TR-White-41-15", mt1);
+//          findContours(mt, contours1, RETR_LIST, CHAIN_APPROX_SIMPLE);
+//          for( size_t i = 0; i < contours1.size(); i++ )
+//          {
+//            if (t > 3) break;
+//            area = contourArea(contours1[i]);
+//            //if (area > 300 && area < 600){   //画像サイズ640の時100　1000なら200
+//              
+//            // 2025/9/5 修正
+//              if (area > 200 && area < 600) {
+//                  // approxPolyDP(Mat(contours1[i]), approx, arcLength(Mat(contours1[i]), true)*0.05, true);
+//                  approxPolyDP(Mat(contours1[i]), approx, arcLength(Mat(contours1[i]), true) * 0.05, true);
+//
+//                  if (approx.size() == 3 && t < 4) {
+//                      t++;
+//
+//                      // approxのサイズが3であることを確認
+//                      // 既に外側のif文でチェックしているため、この部分は不要ですが、
+//                      // 念のため、安全なアクセスを保証するロジックを再構成します。
+//                      if (approx.size() < 3) {
+//                          // サイズが3未満の場合は何もしない
+//                          // この場合、案内表示ロジックは実行されないが、エラーは発生しない
+//                          // returnは関数全体を終了させるため、ここでは使わない
+//                      } else {
+//                          // approxのサイズが3であることを確認してから処理
+//                          std::vector<long> ll(3);
+//
+//                          if (LR == 0) {
+//                              for (int j = 0; j < 3; j++) {
+//                                  ll[j] = (long)approx[j].x * (long)approx[j].x + (long)approx[j].y * (long)approx[j].y;
+//                              }
+//                              ij = minl_return(ll.data());
+//                              
+//                              // ijが有効なインデックスであることを確認
+//                              if (ij >= 0 && ij < approx.size()) {
+//                                  X = (int)approx[ij].x + 10;
+//                                  Y = (int)approx[ij].y + 20;
+//                                  // printf( "\n Canny TR-R X=%d Y=%d \n", X,Y );
+//                              } else {
+//                                  // 無効なインデックスの場合は何もしない
+//                              }
+//                          }
+//
+//                          if (LR == 1) { // 三角左向き
+//                              for (int j = 0; j < 3; j++) {
+//                                  ll[j] = (80 - (long)approx[j].x) * (80 - (long)approx[j].x) + (long)approx[j].y * (long)approx[j].y;
+//                              }
+//                              ij = minl_return(ll.data());
+//
+//                              // ijが有効なインデックスであることを確認
+//                              if (ij >= 0 && ij < approx.size()) {
+//                                  X = (int)approx[ij].x + 10;
+//                                  Y = (int)approx[ij].y + 20;
+//                                  // printf( "\n Canny TR-L X=%d Y=%d \n", X,Y );
+//                              } else {
+//                                  // 無効なインデックスの場合は何もしない
+//                              }
+//                          }
+//                      }
+//                  
+////                  if (area > 200 && area < 600){   //三角画像サイズ変更　6✕6の三角は小さい為
+////                //  approxPolyDP(Mat(contours1[i]), approx, arcLength(Mat(contours1[i]), true)*0.05, true);//0.05
+////                  approxPolyDP(Mat(contours1[i]), approx, arcLength(Mat(contours1[i]), true)*0.05, true);
+////                  if (approx.size() == 3 && t < 4 ){
+////                  //printf( "TRA-Area=%f\n", area );
+////        //polylines(imgSub, approx, true, Scalar(255), 2);// Test表示はここ
+////        //imshow("FT-apl-adap", imgSub);
+////                      t++;
+////                  if (approx.size() == 3 && t < 4 ){
+////                  //printf( "TRA-Area=%f\n", area );
+////        //polylines(imgSub, approx, true, Scalar(255), 2);// Test表示はここ
+////        //imshow("FT-apl-adap", imgSub);
+////                      t++;
+////                  if(LR==0){
+////                      for(int j=0;j<3;j++)
+////                          ll[j] =(int)approx[j].x * (int)approx[j].x + (int)approx[j].y * (int)approx[j].y;
+////                      ij = minl_return(ll);
+////                      X=(int)approx[ij].x +10;
+////                      Y=(int)approx[ij].y +20;
+////                      return 1;
+////                  }
+////                  if(LR==1){
+////                      for(int j=0;j<3;j++)
+////                          ll[j] =(80-(int)approx[j].x) * (80-(int)approx[j].x) + (int)approx[j].y * (int)approx[j].y;
+////                      ij = minl_return(ll);
+////                      //X=(int)approx[ij].x +10 -50;// 三角の左の頂点座標
+////                      //X=(int)approx[ij].x +10 -41;// 三角の左の頂点座標 直角ではない
+////                      X=(int)approx[ij].x +10;// 直角点とする　2022/01/18
+////                      Y=(int)approx[ij].y +20;
+////                      return 1;
+////                  }
+//
+//              }
+//            }
+//        }
+//      }
+//  //////////////////////////////////////////
+//
+//    if (t == 0)  return -1;
+//  return 0;
+//}
 ////////////////////
 ///////////////////////////////　6✕6ブロック　２５個の突起の黒点数算出/////Get_codeよりcall
 static void Black_point(const Mat& mt, int black[5][5])
@@ -1903,7 +2673,7 @@ static void Black_point0(const Mat& mt, int black[5][5])
     //////////////////////////////////////// ここまでは通常　////////////
     ////////////// 以下　一様に影がある場合　真ん中をリファレンスにする試行
     int ref = black[2][2];
-    if((ref > 85)&&(ref < 190)){//70だとオリジナルでとれるものもエラーになる場合あり
+    if((ref > 85)&&(ref < 400)){//70だとオリジナルでとれるものもエラーになる場合あり
         //100前後は突起内の影　西日などによる突起をはみ出した突起の本体の影は180を超えるケースあり
         for (int i=0;i<5;i++){//print only
             //printf(" \n");

@@ -12,8 +12,11 @@ class VideoCaptureModel: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate 
     private var device: AVCaptureDevice! //カメラ
     private var output: AVCaptureVideoDataOutput! //出力先
     
+    var isCameraRunning = false
     
-    public func startCapturing() {
+    //変更 2024/07/28
+    // VideoCaptureModel内に新しいセッションセットアップメソッドを追加
+    public func setupSession() {
         // セッションの作成.
         captureSession = AVCaptureSession()
         // 解像度の指定.
@@ -76,12 +79,32 @@ class VideoCaptureModel: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate 
                 connection.videoOrientation = AVCaptureVideoOrientation.portrait
             }
         }
-        captureSession.startRunning()
+        
+        //変更 2024/10/11
+        //captureSession.startRunning()
+    }
+    
+    public func startCapturing() {
+        
+        //変更 2024/07/28
+        //captureSessionがnilでないことを確認し、その上でセッションの開始
+        DispatchQueue.main.async {
+                if let session = self.captureSession, !session.isRunning {
+                    session.startRunning()
+                } else {
+                    print("Camera session is not set up or already running")
+                }
+            }
+        isCameraRunning = true
+        
     }
     
     
     public func stopCapturing() {
-        captureSession.stopRunning()
+        if let session = captureSession, session.isRunning{
+            captureSession.stopRunning()
+            isCameraRunning = false
+        }
     }
     
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
@@ -138,3 +161,4 @@ class VideoCaptureModel: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate 
         return resultImage
     }
 }
+

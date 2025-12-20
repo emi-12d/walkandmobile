@@ -4,7 +4,7 @@
 "Latest data" = "最新のデータ";
 "The latest data could be installed." = "最新のデータをインストールすることができました。";
 "Verification" = "確認中";
-"Unregistered" = "未登録";
+"Unregistered" = "";
 "normal" = "一般";
 "detail" = "詳細";
 "evacuation" = "避難";

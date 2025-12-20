@@ -4,13 +4,14 @@ protocol AudioPlayerDelegate: AnyObject {
     func didFinishReading()
     // どこで呼んでいるかわからない、
     func didFinishPlaying()
+    func playerDidFinishPlaying(notification: Notification)
 }
 
 class AudioPlayerModel: NSObject {
     weak var delegate: AudioPlayerDelegate?
     private var audioPlayer = AVAudioPlayer()
     private let textToSpeech = AVSpeechSynthesizer()
-    private let initMessage = NSLocalizedString("Verification", comment: "")
+   // private let initMessage = NSLocalizedString("Verification", comment: "")
     public var process = false
 
     //var alreadyread = ""
@@ -32,9 +33,17 @@ class AudioPlayerModel: NSObject {
         //読み上げ速度：Min0.1~Max1.0 標準0.5
         read.rate = self.playbackSpeed
         // 案内文を読み上げ
-        DispatchQueue.main.asyncAfter(deadline: .now() + delayStartTime / Double(playbackSpeed)) {
-            self.textToSpeech.speak(read)//ここをコメントアウトすると音声案内が停止する
+        if UIAccessibility.isVoiceOverRunning{
+            DispatchQueue.main.asyncAfter(deadline: .now() + delayStartTime / Double(playbackSpeed)) {
+                //self.textToSpeech.speak(read)//ここをコメントアウトすると音声案内が停止する
+            }
         }
+        else{
+            DispatchQueue.main.asyncAfter(deadline: .now() + delayStartTime / Double(playbackSpeed)) {
+                //self.textToSpeech.speak(read)//ここをコメントアウトすると音声案内が停止する
+            }
+        }
+        
     }
     
     // 途中で案内文を終了する
@@ -135,6 +144,12 @@ extension AudioPlayerModel: AVAudioPlayerDelegate {
             print("AVAudioPlayer init failed")
         }
     }
+    
+    //変更 2024/06/28
+    func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
+        delegate?.didFinishPlaying()
+    }
+    
 }
 
 extension AudioPlayerModel: AVSpeechSynthesizerDelegate {
@@ -144,29 +159,34 @@ extension AudioPlayerModel: AVSpeechSynthesizerDelegate {
     }
     
     
+    
+    
+    
+    
     /*
-    // 一時停止→音声速度ボタン→再開で再生速度変化
-    // 文章の切れ目問題が解消できないため不採用？
-    // 読み上げ中に呼ばれる
-    func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, willSpeakRangeOfSpeechString characterRange: NSRange, utterance: AVSpeechUtterance) {
-        // 既読を抽出
-        let reading = (utterance.speechString as NSString).substring(with: characterRange)
-        alreadyread = alreadyread + reading
-        //print(alreadyread)
-    }
-    // 再開時に呼ばれる
-    func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didContinue utterance: AVSpeechUtterance) {
-        //　未読 = 全文　- 既読 (たまにエラー)
-        let unread: String = String(fulltext.suffix(fulltext.count - alreadyread.count))
-        //読み上げ文差し替え
-        stop()
-        let read = AVSpeechUtterance(string: unread)
-        //再生速度変化
-        playbackSpeed = UserDefaults.standard.float(forKey: "reproductionSpeed")
-        read.rate = playbackSpeed
-        //読み上げ
-        textToSpeech.speak(read)
-    }
+     // 一時停止→音声速度ボタン→再開で再生速度変化
+     // 文章の切れ目問題が解消できないため不採用？
+     // 読み上げ中に呼ばれる
+     func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, willSpeakRangeOfSpeechString characterRange: NSRange, utterance: AVSpeechUtterance) {
+     // 既読を抽出
+     let reading = (utterance.speechString as NSString).substring(with: characterRange)
+     alreadyread = alreadyread + reading
+     //print(alreadyread)
+     }
+     // 再開時に呼ばれる
+     func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didContinue utterance: AVSpeechUtterance) {
+     //　未読 = 全文　- 既読 (たまにエラー)
+     let unread: String = String(fulltext.suffix(fulltext.count - alreadyread.count))
+     //読み上げ文差し替え
+     stop()
+     let read = AVSpeechUtterance(string: unread)
+     //再生速度変化
+     playbackSpeed = UserDefaults.standard.float(forKey: "reproductionSpeed")
+     read.rate = playbackSpeed
+     //読み上げ
+     textToSpeech.speak(read)
+     }
      */
+    
+    
 }
-
