@@ -2303,8 +2303,6 @@ static long Getcode( const Mat& image, int *X, int *Y,int &invmean, int LR)
 }
 
 
-// MARK: -- FindTR for Get_Code
-///////////////////////////New GfindTr1/////add 6*6//////////2022
 static int minl_return3(long *a) { // 3回ループ版
     long min; int idx;
     min = a[0]; idx = 0;
@@ -2368,10 +2366,10 @@ static int GfindTr1( const Mat& gray, int &X, int &Y, int LR )
                   std::vector<long> ll(3);
 
                   if (LR == 0) {
-                      for(int j = 0; j < 2; j++) {
+                      for(int j = 0; j < 3; j++) {
                           ll[j] = (long)approx[j].x * (long)approx[j].x + (long)approx[j].y * (long)approx[j].y;
                       }
-                      ij = minl_return(ll.data());
+                      ij = minl_return3(ll.data());
 
                       // ijが有効なインデックスであることを確認
                       if (ij >= 0 && ij < approx.size()) {
@@ -2383,10 +2381,10 @@ static int GfindTr1( const Mat& gray, int &X, int &Y, int LR )
                   }
 
                   if (LR == 1) { // 三角左向き
-                      for(int j = 0; j < 2; j++) {
+                      for(int j = 0; j < 3; j++) {
                           ll[j] = (80 - (long)approx[j].x) * (80 - (long)approx[j].x) + (long)approx[j].y * (long)approx[j].y;
                       }
-                      ij = minl_return(ll.data());
+                      ij = minl_return3(ll.data());
 
                       // ijが有効なインデックスであることを確認
                       if (ij >= 0 && ij < approx.size()) {
@@ -2433,15 +2431,16 @@ static int GfindTr1( const Mat& gray, int &X, int &Y, int LR )
                           std::vector<long> ll(3);
 
                           if (LR == 0) {
-                              for (int j = 0; j < 2; j++) {
+                              for (int j = 0; j < 3; j++) {
                                   ll[j] = (long)approx[j].x * (long)approx[j].x + (long)approx[j].y * (long)approx[j].y;
                               }
-                              ij = minl_return(ll.data());
+                              ij = minl_return3(ll.data());
                               
                               // ijが有効なインデックスであることを確認
                               if (ij >= 0 && ij < approx.size()) {
                                   X = (int)approx[ij].x + 10;
                                   Y = (int)approx[ij].y + 20;
+                                  return 1;
                                   // printf( "\n Canny TR-R X=%d Y=%d \n", X,Y );
                               } else {
                                   // 無効なインデックスの場合は何もしない
@@ -2449,15 +2448,16 @@ static int GfindTr1( const Mat& gray, int &X, int &Y, int LR )
                           }
 
                           if (LR == 1) { // 三角左向き
-                              for (int j = 0; j < 2; j++) {
+                              for (int j = 0; j < 3; j++) {
                                   ll[j] = (80 - (long)approx[j].x) * (80 - (long)approx[j].x) + (long)approx[j].y * (long)approx[j].y;
                               }
-                              ij = minl_return(ll.data());
+                              ij = minl_return3(ll.data());
 
                               // ijが有効なインデックスであることを確認
                               if (ij >= 0 && ij < approx.size()) {
                                   X = (int)approx[ij].x + 10;
                                   Y = (int)approx[ij].y + 20;
+                                  return 1;
                                   // printf( "\n Canny TR-L X=%d Y=%d \n", X,Y );
                               } else {
                                   // 無効なインデックスの場合は何もしない
