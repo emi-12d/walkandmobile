@@ -2305,287 +2305,176 @@ static long Getcode( const Mat& image, int *X, int *Y,int &invmean, int LR)
 
 // MARK: -- FindTR for Get_Code
 ///////////////////////////New GfindTr1/////add 6*6//////////2022
-// MARK: -- Step 1 修正版（ロジック正常化）
+static int minl_return3(long *a) { // 3回ループ版
+    long min; int idx;
+    min = a[0]; idx = 0;
+    for (int j=0; j<3; j++){ // ここを3にする
+        if(a[j] < min){ min = a[j]; idx = j; }
+    }
+    return idx;
+}
+// 2025/12/22 修正
+// MARK: -- FindTR for Get_Code
+///////////////////////////New GfindTr1/////add 6*6//////////2022
 static int GfindTr1( const Mat& gray, int &X, int &Y, int LR )
-{
-    // 画像サイズチェック
-    if (gray.empty() || gray.cols < 90 || gray.rows < 100) return -1;
+{  vector<vector<cv::Point> > contours;
+   vector<vector<cv::Point> > contours1;
 
-    vector<vector<cv::Point> > contours;
-    vector<vector<cv::Point> > contours1;
     vector<cv::Point> approx;
     Mat element = getStructuringElement(MORPH_RECT, cv::Size(3,3));
     double area;
-    Mat mt, mt0, gray0;
-    int ij; // 宣言を追加
+    Mat mt,mt0;
+    //Mat img1 = image.clone();
+    //Mat gray(image.size(), CV_8U);
+    Mat gray0;
+    //Mat grayw(image.size(), CV_8U);
+    long ll[3];
+    int ij;
+    ////////////////////////////////////////////////
+    // Rect rect(X, Y, xl, yl);
+      cv::Rect rect(10,20,80,80);//三角形の場所 X,Yは直角点
+      Mat imgSub(gray, rect);
+      //imshow("imgSub", imgSub);
 
-    cv::Rect rect(10, 20, 80, 80);
-    Mat imgSub(gray, rect);
+//////////////////////////Canny
+      Canny( imgSub, gray0, 60, 180,3 );
+        //imshow("FT-Canny",gray0);
+      morphologyEx(gray0,mt0,MORPH_CLOSE,element, cv::Point(-1,-1),1);// 三角頂点がつながらないケースあり必要2019-12-29
+        //imshow("Mor-TRCanny",mt0);
 
-    Canny(imgSub, gray0, 60, 180, 3);
-    morphologyEx(gray0, mt0, MORPH_CLOSE, element, cv::Point(-1,-1), 1);
-    findContours(mt0, contours, RETR_LIST, CHAIN_APPROX_SIMPLE);
+        findContours(mt0, contours, RETR_LIST, CHAIN_APPROX_SIMPLE);
 
-    int t = 0;
+        int t=0;              // 三角形個数
 
-    for (size_t i = 0; i < contours.size(); i++) {
-        if (t > 3) break;
-        area = contourArea(contours[i]);
+      for( size_t i = 0; i < contours.size(); i++ )
+      {
+          if (t > 3) break;
+          area = contourArea(contours[i]);
+          //if (area > 300 && area < 600){   //三角画像サイズ　416.7
+          if (area > 200 && area < 600){   //三角画像サイズ変更　6✕6の三角は小さい為
+            // 直線近似
+          //  approxPolyDP(Mat(contours[i]), approx, arcLength(Mat(contours[i]), true)*0.05, true);//0.05
+          approxPolyDP(Mat(contours[i]), approx, arcLength(Mat(contours[i]), true)*0.05, true);
+            // 2025/9/4
+              if (approx.size() == 3 && t < 4) {
+                  t++;
+                  
+                  // approxが空またはサイズが3未満の場合に備える
+                  // このif文は、直前の if (approx.size() == 3 ... ) で既にチェック済みなので、
+                  // ここに重複して置く必要はありません。
+                  // もし、このコードブロックが別の関数であれば、このガード句は有効です。
+                  
+                  // ll ベクターの型をlongに変更し、サイズを事前に確保
+                  std::vector<long> ll(3);
 
-        if (area > 200 && area < 600) {
-            approxPolyDP(Mat(contours[i]), approx, arcLength(Mat(contours[i]), true) * 0.05, true);
+                  if (LR == 0) {
+                      for(int j = 0; j < 2; j++) {
+                          ll[j] = (long)approx[j].x * (long)approx[j].x + (long)approx[j].y * (long)approx[j].y;
+                      }
+                      ij = minl_return(ll.data());
 
-            if (approx.size() == 3 && t < 4) {
-                t++;
-                // llのサイズを4にし、4番目には絶対に最小値にならない大きな値を入れる
-                std::vector<long> ll(4);
-                ll[3] = 9999999L; // ここが重要：0ではなく大きな数にする
+                      // ijが有効なインデックスであることを確認
+                      if (ij >= 0 && ij < approx.size()) {
+                          X = (int)approx[ij].x + 10;
+                          Y = (int)approx[ij].y + 20;
+                          //printf( "\n Canny TR-R X=%d Y=%d \n", X,Y );
+                          return 1;
+                      }
+                  }
 
-                if (LR == 0) {
-                    for (int j = 0; j < 3; j++) {
-                        ll[j] = (long)approx[j].x * (long)approx[j].x + (long)approx[j].y * (long)approx[j].y;
-                    }
-                    ij = minl_return(ll.data());
+                  if (LR == 1) { // 三角左向き
+                      for(int j = 0; j < 2; j++) {
+                          ll[j] = (80 - (long)approx[j].x) * (80 - (long)approx[j].x) + (long)approx[j].y * (long)approx[j].y;
+                      }
+                      ij = minl_return(ll.data());
 
-                    if (ij >= 0 && ij < 3) { // 確実に0,1,2の範囲であることをチェック
-                        X = (int)approx[ij].x + 10;
-                        Y = (int)approx[ij].y + 20;
-                        return 1;
-                    }
-                }
+                      // ijが有効なインデックスであることを確認
+                      if (ij >= 0 && ij < approx.size()) {
+                          X = (int)approx[ij].x + 10;
+                          Y = (int)approx[ij].y + 20;
+                          //printf( "\n Canny TR-L X=%d Y=%d \n", X,Y );
+                          return 1;
+                      }
+                  }
+            }
+          }
+        }
+      //////////////////
+      if(t==0){
+        //adaptiveThreshold(gray,mt1,255,ADAPTIVE_THRESH_MEAN_C,THRESH_BINARY_INV,67,35);// 通常の黒三角はこれでOK　従来どおり
+          adaptiveThreshold(imgSub,mt,255,ADAPTIVE_THRESH_MEAN_C,THRESH_BINARY_INV,67,35);
+        //imshow("FT-Adap", mt1);
+        //adaptiveThreshold(imgsub,mt1,255,ADAPTIVE_THRESH_MEAN_C,THRESH_BINARY_INV,41,15);//白三角はこちらの方がよいかも？
+        //imshow("TR-White-41-15", mt1);
+          findContours(mt, contours1, RETR_LIST, CHAIN_APPROX_SIMPLE);
+          for( size_t i = 0; i < contours1.size(); i++ )
+          {
+            if (t > 3) break;
+            area = contourArea(contours1[i]);
+            //if (area > 300 && area < 600){   //画像サイズ640の時100　1000なら200
+              
+            // 2025/9/5 修正
+              if (area > 200 && area < 600) {
+                  // approxPolyDP(Mat(contours1[i]), approx, arcLength(Mat(contours1[i]), true)*0.05, true);
+                  approxPolyDP(Mat(contours1[i]), approx, arcLength(Mat(contours1[i]), true) * 0.05, true);
 
-                if (LR == 1) {
-                    for (int j = 0; j < 3; j++) {
-                        ll[j] = (80 - (long)approx[j].x) * (80 - (long)approx[j].x) + (long)approx[j].y * (long)approx[j].y;
-                    }
-                    ij = minl_return(ll.data());
+                  if (approx.size() == 3 && t < 4) {
+                      t++;
 
-                    if (ij >= 0 && ij < 3) {
-                        X = (int)approx[ij].x + 10;
-                        Y = (int)approx[ij].y + 20;
-                        return 1;
-                    }
-                }
+                      // approxのサイズが3であることを確認
+                      // 既に外側のif文でチェックしているため、この部分は不要ですが、
+                      // 念のため、安全なアクセスを保証するロジックを再構成します。
+                      if (approx.size() < 3) {
+                          // サイズが3未満の場合は何もしない
+                          // この場合、案内表示ロジックは実行されないが、エラーは発生しない
+                          // returnは関数全体を終了させるため、ここでは使わない
+                      } else {
+                          // approxのサイズが3であることを確認してから処理
+                          std::vector<long> ll(3);
+
+                          if (LR == 0) {
+                              for (int j = 0; j < 2; j++) {
+                                  ll[j] = (long)approx[j].x * (long)approx[j].x + (long)approx[j].y * (long)approx[j].y;
+                              }
+                              ij = minl_return(ll.data());
+                              
+                              // ijが有効なインデックスであることを確認
+                              if (ij >= 0 && ij < approx.size()) {
+                                  X = (int)approx[ij].x + 10;
+                                  Y = (int)approx[ij].y + 20;
+                                  // printf( "\n Canny TR-R X=%d Y=%d \n", X,Y );
+                              } else {
+                                  // 無効なインデックスの場合は何もしない
+                              }
+                          }
+
+                          if (LR == 1) { // 三角左向き
+                              for (int j = 0; j < 2; j++) {
+                                  ll[j] = (80 - (long)approx[j].x) * (80 - (long)approx[j].x) + (long)approx[j].y * (long)approx[j].y;
+                              }
+                              ij = minl_return(ll.data());
+
+                              // ijが有効なインデックスであることを確認
+                              if (ij >= 0 && ij < approx.size()) {
+                                  X = (int)approx[ij].x + 10;
+                                  Y = (int)approx[ij].y + 20;
+                                  // printf( "\n Canny TR-L X=%d Y=%d \n", X,Y );
+                              } else {
+                                  // 無効なインデックスの場合は何もしない
+                              }
+                          }
+                      }
+
+              }
             }
         }
-    }
-    // (AdaptiveThreshold部分は同様のため省略。ll[3] = 9999999L; を同様に適用してください)
-    
-    if (t == 0) return -1;
-    return 0;
+      }
+
+
+    if (t == 0)  return -1;
+  return 0;
 }
-//static int GfindTr1( const Mat& gray, int &X, int &Y, int LR )
-//{  vector<vector<cv::Point> > contours;
-//   vector<vector<cv::Point> > contours1;
-//
-//    vector<cv::Point> approx;
-//    Mat element = getStructuringElement(MORPH_RECT, cv::Size(3,3));
-//    double area;
-//    Mat mt,mt0;
-//    //Mat img1 = image.clone();
-//    //Mat gray(image.size(), CV_8U);
-//    Mat gray0;
-//    //Mat grayw(image.size(), CV_8U);
-//    long ll[3];
-//    int ij;
-//    ////////////////////////////////////////////////
-//    // Rect rect(X, Y, xl, yl);
-//      cv::Rect rect(10,20,80,80);//三角形の場所 X,Yは直角点
-//      Mat imgSub(gray, rect);
-//      //imshow("imgSub", imgSub);
-//
-////////////////////////////Canny
-//      Canny( imgSub, gray0, 60, 180,3 );
-//        //imshow("FT-Canny",gray0);
-//      morphologyEx(gray0,mt0,MORPH_CLOSE,element, cv::Point(-1,-1),1);// 三角頂点がつながらないケースあり必要2019-12-29
-//        //imshow("Mor-TRCanny",mt0);
-//
-//        findContours(mt0, contours, RETR_LIST, CHAIN_APPROX_SIMPLE);
-//
-//        int t=0;              // 三角形個数
-//
-//      for( size_t i = 0; i < contours.size(); i++ )
-//      {
-//          if (t > 3) break;
-//          area = contourArea(contours[i]);
-//          //if (area > 300 && area < 600){   //三角画像サイズ　416.7
-//          if (area > 200 && area < 600){   //三角画像サイズ変更　6✕6の三角は小さい為
-//            // 直線近似
-//          //  approxPolyDP(Mat(contours[i]), approx, arcLength(Mat(contours[i]), true)*0.05, true);//0.05
-//          approxPolyDP(Mat(contours[i]), approx, arcLength(Mat(contours[i]), true)*0.05, true);
-//            // 2025/9/4
-//              if (approx.size() == 3 && t < 4) {
-//                  t++;
-//                  
-//                  // approxが空またはサイズが3未満の場合に備える
-//                  // このif文は、直前の if (approx.size() == 3 ... ) で既にチェック済みなので、
-//                  // ここに重複して置く必要はありません。
-//                  // もし、このコードブロックが別の関数であれば、このガード句は有効です。
-//                  
-//                  // ll ベクターの型をlongに変更し、サイズを事前に確保
-//                  std::vector<long> ll(3);
-//
-//                  if (LR == 0) {
-//                      for(int j = 0; j < 3; j++) {
-//                          ll[j] = (long)approx[j].x * (long)approx[j].x + (long)approx[j].y * (long)approx[j].y;
-//                      }
-//                      ij = minl_return(ll.data());
-//
-//                      // ijが有効なインデックスであることを確認
-//                      if (ij >= 0 && ij < approx.size()) {
-//                          X = (int)approx[ij].x + 10;
-//                          Y = (int)approx[ij].y + 20;
-//                          //printf( "\n Canny TR-R X=%d Y=%d \n", X,Y );
-//                          return 1;
-//                      }
-//                  }
-//
-//                  if (LR == 1) { // 三角左向き
-//                      for(int j = 0; j < 3; j++) {
-//                          ll[j] = (80 - (long)approx[j].x) * (80 - (long)approx[j].x) + (long)approx[j].y * (long)approx[j].y;
-//                      }
-//                      ij = minl_return(ll.data());
-//
-//                      // ijが有効なインデックスであることを確認
-//                      if (ij >= 0 && ij < approx.size()) {
-//                          X = (int)approx[ij].x + 10;
-//                          Y = (int)approx[ij].y + 20;
-//                          //printf( "\n Canny TR-L X=%d Y=%d \n", X,Y );
-//                          return 1;
-//                      }
-//                  }
-//              
-////              if(LR==0){
-////                  for(int j=0;j<3;j++)
-////                      ll[j] =(int)approx[j].x * (int)approx[j].x + (int)approx[j].y * (int)approx[j].y;
-////                  ij = minl_return(ll);
-////                  X=(int)approx[ij].x +10;
-////                  Y=(int)approx[ij].y +20;
-////                  //printf( "\n Canny TR-R X=%d Y=%d \n", X,Y );
-////                  return 1;
-////              }
-////              if(LR==1){// 三角左向き
-////                  for(int j=0;j<3;j++)
-////                      ll[j] =(80-(int)approx[j].x) * (80-(int)approx[j].x) + (int)approx[j].y * (int)approx[j].y;
-////                  ij = minl_return(ll);
-////                  //X=(int)approx[ij].x +10 -50;// 三角の左の頂点座標
-////                  //X=(int)approx[ij].x +10 -41;// 三角の左の頂点座標
-////                  X=(int)approx[ij].x +10;// 直角点とする　2022/01/18
-////                  Y=(int)approx[ij].y +20;
-////                  //printf( "\n Canny TR-L X=%d Y=%d \n", X,Y );
-////                  return 1;
-////              }
-//
-//            }
-//          }
-//        }
-//      //////////////////
-//      if(t==0){
-//        //adaptiveThreshold(gray,mt1,255,ADAPTIVE_THRESH_MEAN_C,THRESH_BINARY_INV,67,35);// 通常の黒三角はこれでOK　従来どおり
-//          adaptiveThreshold(imgSub,mt,255,ADAPTIVE_THRESH_MEAN_C,THRESH_BINARY_INV,67,35);
-//        //imshow("FT-Adap", mt1);
-//        //adaptiveThreshold(imgsub,mt1,255,ADAPTIVE_THRESH_MEAN_C,THRESH_BINARY_INV,41,15);//白三角はこちらの方がよいかも？
-//        //imshow("TR-White-41-15", mt1);
-//          findContours(mt, contours1, RETR_LIST, CHAIN_APPROX_SIMPLE);
-//          for( size_t i = 0; i < contours1.size(); i++ )
-//          {
-//            if (t > 3) break;
-//            area = contourArea(contours1[i]);
-//            //if (area > 300 && area < 600){   //画像サイズ640の時100　1000なら200
-//              
-//            // 2025/9/5 修正
-//              if (area > 200 && area < 600) {
-//                  // approxPolyDP(Mat(contours1[i]), approx, arcLength(Mat(contours1[i]), true)*0.05, true);
-//                  approxPolyDP(Mat(contours1[i]), approx, arcLength(Mat(contours1[i]), true) * 0.05, true);
-//
-//                  if (approx.size() == 3 && t < 4) {
-//                      t++;
-//
-//                      // approxのサイズが3であることを確認
-//                      // 既に外側のif文でチェックしているため、この部分は不要ですが、
-//                      // 念のため、安全なアクセスを保証するロジックを再構成します。
-//                      if (approx.size() < 3) {
-//                          // サイズが3未満の場合は何もしない
-//                          // この場合、案内表示ロジックは実行されないが、エラーは発生しない
-//                          // returnは関数全体を終了させるため、ここでは使わない
-//                      } else {
-//                          // approxのサイズが3であることを確認してから処理
-//                          std::vector<long> ll(3);
-//
-//                          if (LR == 0) {
-//                              for (int j = 0; j < 3; j++) {
-//                                  ll[j] = (long)approx[j].x * (long)approx[j].x + (long)approx[j].y * (long)approx[j].y;
-//                              }
-//                              ij = minl_return(ll.data());
-//                              
-//                              // ijが有効なインデックスであることを確認
-//                              if (ij >= 0 && ij < approx.size()) {
-//                                  X = (int)approx[ij].x + 10;
-//                                  Y = (int)approx[ij].y + 20;
-//                                  // printf( "\n Canny TR-R X=%d Y=%d \n", X,Y );
-//                              } else {
-//                                  // 無効なインデックスの場合は何もしない
-//                              }
-//                          }
-//
-//                          if (LR == 1) { // 三角左向き
-//                              for (int j = 0; j < 3; j++) {
-//                                  ll[j] = (80 - (long)approx[j].x) * (80 - (long)approx[j].x) + (long)approx[j].y * (long)approx[j].y;
-//                              }
-//                              ij = minl_return(ll.data());
-//
-//                              // ijが有効なインデックスであることを確認
-//                              if (ij >= 0 && ij < approx.size()) {
-//                                  X = (int)approx[ij].x + 10;
-//                                  Y = (int)approx[ij].y + 20;
-//                                  // printf( "\n Canny TR-L X=%d Y=%d \n", X,Y );
-//                              } else {
-//                                  // 無効なインデックスの場合は何もしない
-//                              }
-//                          }
-//                      }
-//                  
-////                  if (area > 200 && area < 600){   //三角画像サイズ変更　6✕6の三角は小さい為
-////                //  approxPolyDP(Mat(contours1[i]), approx, arcLength(Mat(contours1[i]), true)*0.05, true);//0.05
-////                  approxPolyDP(Mat(contours1[i]), approx, arcLength(Mat(contours1[i]), true)*0.05, true);
-////                  if (approx.size() == 3 && t < 4 ){
-////                  //printf( "TRA-Area=%f\n", area );
-////        //polylines(imgSub, approx, true, Scalar(255), 2);// Test表示はここ
-////        //imshow("FT-apl-adap", imgSub);
-////                      t++;
-////                  if (approx.size() == 3 && t < 4 ){
-////                  //printf( "TRA-Area=%f\n", area );
-////        //polylines(imgSub, approx, true, Scalar(255), 2);// Test表示はここ
-////        //imshow("FT-apl-adap", imgSub);
-////                      t++;
-////                  if(LR==0){
-////                      for(int j=0;j<3;j++)
-////                          ll[j] =(int)approx[j].x * (int)approx[j].x + (int)approx[j].y * (int)approx[j].y;
-////                      ij = minl_return(ll);
-////                      X=(int)approx[ij].x +10;
-////                      Y=(int)approx[ij].y +20;
-////                      return 1;
-////                  }
-////                  if(LR==1){
-////                      for(int j=0;j<3;j++)
-////                          ll[j] =(80-(int)approx[j].x) * (80-(int)approx[j].x) + (int)approx[j].y * (int)approx[j].y;
-////                      ij = minl_return(ll);
-////                      //X=(int)approx[ij].x +10 -50;// 三角の左の頂点座標
-////                      //X=(int)approx[ij].x +10 -41;// 三角の左の頂点座標 直角ではない
-////                      X=(int)approx[ij].x +10;// 直角点とする　2022/01/18
-////                      Y=(int)approx[ij].y +20;
-////                      return 1;
-////                  }
-//
-//              }
-//            }
-//        }
-//      }
-//  //////////////////////////////////////////
-//
-//    if (t == 0)  return -1;
-//  return 0;
-//}
+
 ////////////////////
 ///////////////////////////////　6✕6ブロック　２５個の突起の黒点数算出/////Get_codeよりcall
 static void Black_point(const Mat& mt, int black[5][5])
