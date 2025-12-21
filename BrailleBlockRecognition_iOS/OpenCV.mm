@@ -1447,10 +1447,11 @@ static int FHomo(const Mat& image, vector<vector<cv::Point> >& sq, int sqindex, 
           //////////////４角形 左上の頂点に最も近い三角形の頂点を探す　ij
                   int ij;
                   int ttx[3],tty[3];
+            ll[3] = 999999;
 
                   for(int ij=0;ij<3;ij++)
                     ll[ij] =(ax[ii]-tx[ij])*(ax[ii]-tx[ij]) + (bx[ii]-ty[ij])*(bx[ii]-ty[ij]);
-                    ij = minl_return(ll);
+                    ij = minl_return3(ll); //2025/12/22 変更
 
                     if (ll[ij]  < TRmin*0.5)
                               continue;
@@ -2097,7 +2098,8 @@ static int sfindTr( const Mat& img , int TrBW, int TX[3] , int TY[3], int &RDLU)
     Mat mt,mtc,mt0,mt1;
     Mat gray,gray0,grayw;
     //Mat grayw(image.size(), CV_8U);
-    long ll[3];
+    // long ll[3];
+    long ll[3] = {999999, 999999, 999999}; // 巨大な値で初期化
     int ij;
     int tx[3],ty[3];
     int ttx[3],tty[3];
