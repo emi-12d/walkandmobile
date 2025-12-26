@@ -94,19 +94,18 @@ class NextViewController: UIViewController,UIGestureRecognizerDelegate,CLLocatio
     }
    
     
-    
-    
-    
     func stopmotion() {
-        //guideVoice.stop()
+        // 音声を停止させる処理を追加
+        guideVoice.stop()
+        codeBlock2.stopAudio()
+        
         guideText = ""
         urlMessage = ""
-//        code.text = "\(0)"
-//        angle.text = "\(0)"
         genres.setTitle(NSLocalizedString(genreName, comment: ""), for: .normal)
-//        cameraImageView.layer.borderColor = UIColor.clear.cgColor
+        
+        // 音声が止まったらセンサも止める（無駄な動作防止）
+        stopAccelerometer()
     }
-    
     
     
     //自動スリープを無効化
@@ -138,6 +137,8 @@ class NextViewController: UIViewController,UIGestureRecognizerDelegate,CLLocatio
         videoCapture.delegate = self
         //インスタンスアクセス許可
         codeBlock2.nextViewController = self
+        
+        guideVoice.delegate = self
         
         setDefaultButtonName()
     }
@@ -196,6 +197,7 @@ class NextViewController: UIViewController,UIGestureRecognizerDelegate,CLLocatio
         acceleZ = Alpha * acceleration.z + acceleZ * (1.0 - Alpha);
         //加速度の絶対値が1.3を超えた時の処理（音声停止）
         if acceleX > 1.3 || acceleY > 1.3 || acceleZ > 1.3 || acceleX < -1.3 || acceleY < -1.3 || acceleZ < -1.3 {
+            print("シェイクを検知しました！")
             stopmotion()
         }
     }
@@ -231,6 +233,7 @@ class NextViewController: UIViewController,UIGestureRecognizerDelegate,CLLocatio
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         videoCapture.stopCapturing()
+        stopAccelerometer() // 追加
     }
     
     //変更 2024/07/28
@@ -376,17 +379,28 @@ extension NextViewController: AudioPlayerDelegate {
     // 読み取り音が鳴り終わったら呼び出される
     func didFinishPlaying() {
         print("didFinishPlaying")
-        //シェイクの設定↓
-        if motionManager.isAccelerometerAvailable {
-            // intervalの設定 [sec]
-            motionManager.accelerometerUpdateInterval = 0.2
-            // センサー値の取得開始
-            motionManager.startAccelerometerUpdates(
-                to: OperationQueue.current!,
-                withHandler: {(accelData: CMAccelerometerData?, errorOC: Error?) in
-                    self.lowpassFilter(acceleration: accelData!.acceleration)
-            })
-        }
+//        //シェイクの設定↓
+//        if motionManager.isAccelerometerAvailable {
+//            // intervalの設定 [sec]
+//            motionManager.accelerometerUpdateInterval = 0.2
+//            // センサー値の取得開始
+//            motionManager.startAccelerometerUpdates(
+//                to: OperationQueue.current!,
+//                withHandler: {(accelData: CMAccelerometerData?, errorOC: Error?) in
+//                    self.lowpassFilter(acceleration: accelData!.acceleration)
+//            })
+//        }
+        // シェイク検知を開始
+            if motionManager.isAccelerometerAvailable {
+                motionManager.accelerometerUpdateInterval = 0.2
+                motionManager.startAccelerometerUpdates(
+                    to: OperationQueue.current!,
+                    withHandler: { (accelData: CMAccelerometerData?, error: Error?) in
+                        guard let data = accelData else { return }
+                        self.lowpassFilter(acceleration: data.acceleration)
+                    }
+                )
+            }
         videoCapture.startCapturing()
        
         guard let webView = safariVC else { return }
