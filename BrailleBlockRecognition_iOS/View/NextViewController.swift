@@ -15,11 +15,11 @@ import AVFoundation//変更箇所
 
 
 class NextViewController: UIViewController,UIGestureRecognizerDelegate,CLLocationManagerDelegate,UITextViewDelegate{
-    @IBOutlet weak var cameraImageView: UIImageView!
-    @IBOutlet weak var code: UITextField!
-    @IBOutlet weak var angle: UITextField!
+//    @IBOutlet weak var cameraImageView: UIImageView!
+//    @IBOutlet weak var code: UITextField!
+//    @IBOutlet weak var angle: UITextField!
     @IBOutlet weak var genres: UIButton!
-    @IBOutlet weak var guidance: UITextView!
+//    @IBOutlet weak var guidance: UITextView!
     
     var infoBarButtonItem: UIBarButtonItem!
     
@@ -101,10 +101,10 @@ class NextViewController: UIViewController,UIGestureRecognizerDelegate,CLLocatio
         //guideVoice.stop()
         guideText = ""
         urlMessage = ""
-        code.text = "\(0)"
-        angle.text = "\(0)"
+//        code.text = "\(0)"
+//        angle.text = "\(0)"
         genres.setTitle(NSLocalizedString(genreName, comment: ""), for: .normal)
-        cameraImageView.layer.borderColor = UIColor.clear.cgColor
+//        cameraImageView.layer.borderColor = UIColor.clear.cgColor
     }
     
     
@@ -176,19 +176,19 @@ class NextViewController: UIViewController,UIGestureRecognizerDelegate,CLLocatio
     //周辺の避難所情報取得機能　↑
     
     //文字の大きさ設定
-    func setFontsize() {
-        fontsize = UserDefaults.standard.string(forKey: "fontsize") ?? "nil"
-        print(fontsize)
-        if fontsize == "Small"{
-            guidance.font = UIFont.systemFont(ofSize: 15)
-        }
-        else if fontsize == "Large"{
-            guidance.font = UIFont.systemFont(ofSize: 25)
-        }
-        else{
-            guidance.font = UIFont.systemFont(ofSize: 20)
-        }
-    }
+//    func setFontsize() {
+//        fontsize = UserDefaults.standard.string(forKey: "fontsize") ?? "nil"
+//        print(fontsize)
+//        if fontsize == "Small"{
+//            guidance.font = UIFont.systemFont(ofSize: 15)
+//        }
+//        else if fontsize == "Large"{
+//            guidance.font = UIFont.systemFont(ofSize: 25)
+//        }
+//        else{
+//            guidance.font = UIFont.systemFont(ofSize: 20)
+//        }
+//    }
     
     func lowpassFilter(acceleration: CMAcceleration){
         acceleX = Alpha * acceleration.x + acceleX * (1.0 - Alpha);
@@ -223,10 +223,10 @@ class NextViewController: UIViewController,UIGestureRecognizerDelegate,CLLocatio
     }
     
     // 認識中　赤枠線表示
-    func changeColorFrame(){
-        cameraImageView.layer.borderColor = UIColor.red.cgColor
-        cameraImageView.layer.borderWidth = 5
-    }
+//    func changeColorFrame(){
+//        cameraImageView.layer.borderColor = UIColor.red.cgColor
+//        cameraImageView.layer.borderWidth = 5
+//    }
     //画面から移動した時に呼ばれる
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
@@ -245,7 +245,7 @@ extension NextViewController: VideoCaptureDelegate {
     func didCaptureFrame(display: UIImage, code: String, angle: String) {
         //コードか点字ブロック読み込み時の処理の記載
         // 画像表示
-        cameraImageView.image = display
+//        cameraImageView.image = display
         // 案内文表示
         //guidance.text = guideText
         // ある点字ブロックのキー作成
@@ -264,7 +264,7 @@ extension NextViewController: VideoCaptureDelegate {
         
         //変更 2024/06/19
         if code > 0 && angle > -1{
-            changeColorFrame()
+//            changeColorFrame()
           
            
             // 読み方を取得
@@ -328,8 +328,8 @@ extension NextViewController: VideoCaptureDelegate {
                 config.entersReaderIfAvailable = true
                 self.safariVC = SFSafariViewController(url: web as URL, configuration: config)
             }
-            self.code.text = "\(code)"
-            self.angle.text = "\(angle)"
+//            self.code.text = "\(code)"
+//            self.angle.text = "\(angle)"
             
             //変更 2024/07/21
             codeBlock2.stopAudio()
@@ -359,7 +359,7 @@ extension NextViewController: AudioPlayerDelegate {
         //現在のジャンルに設定
         genres.setTitle(NSLocalizedString(genreName, comment: ""), for: .normal)
         //カメラ画面の枠色をクリア
-        cameraImageView.layer.borderColor = UIColor.clear.cgColor
+//        cameraImageView.layer.borderColor = UIColor.clear.cgColor
         //videoCapture.startCapturing()
         
         //URLの処理
@@ -405,7 +405,7 @@ extension NextViewController: AudioPlayerDelegate {
         //現在のジャンルに設定
         genres.setTitle(NSLocalizedString(genreName, comment: ""), for: .normal)
         //カメラ画面の枠色をクリア
-        cameraImageView.layer.borderColor = UIColor.clear.cgColor
+//        cameraImageView.layer.borderColor = UIColor.clear.cgColor
         //videoCapture.startCapturing()
         
         //URLの処理
