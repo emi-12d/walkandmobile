@@ -379,17 +379,6 @@ extension NextViewController: AudioPlayerDelegate {
     // 読み取り音が鳴り終わったら呼び出される
     func didFinishPlaying() {
         print("didFinishPlaying")
-//        //シェイクの設定↓
-//        if motionManager.isAccelerometerAvailable {
-//            // intervalの設定 [sec]
-//            motionManager.accelerometerUpdateInterval = 0.2
-//            // センサー値の取得開始
-//            motionManager.startAccelerometerUpdates(
-//                to: OperationQueue.current!,
-//                withHandler: {(accelData: CMAccelerometerData?, errorOC: Error?) in
-//                    self.lowpassFilter(acceleration: accelData!.acceleration)
-//            })
-//        }
         // シェイク検知を開始
             if motionManager.isAccelerometerAvailable {
                 motionManager.accelerometerUpdateInterval = 0.2
