@@ -196,10 +196,14 @@ class NextViewController: UIViewController,UIGestureRecognizerDelegate,CLLocatio
         acceleY = Alpha * acceleration.y + acceleY * (1.0 - Alpha);
         acceleZ = Alpha * acceleration.z + acceleZ * (1.0 - Alpha);
         //加速度の絶対値が1.3を超えた時の処理（音声停止）
-        if acceleX > 1.3 || acceleY > 1.3 || acceleZ > 1.3 || acceleX < -1.3 || acceleY < -1.3 || acceleZ < -1.3 {
-            print("シェイクを検知しました！")
-            stopmotion()
-        }
+        
+        let threshold: Double = 1.1
+
+            if acceleX > threshold || acceleY > threshold || acceleZ > threshold ||
+               acceleX < -threshold || acceleY < -threshold || acceleZ < -threshold {
+                print("シェイクを検知しました！")
+                stopmotion()
+            }
     }
     
     //加速度の測定を停止する
