@@ -58,6 +58,49 @@ class NextViewController: UIViewController,UIGestureRecognizerDelegate,CLLocatio
     let Alpha = 0.4
     var flg: Bool = false
     
+    //読み上げ速度変更用の変数を追加
+    // 案内音声の再生速度を管理するプロパティ
+//    var playbackSpeed: Float {
+//        get {
+//            let speed = UserDefaults.standard.float(forKey: "reproductionSpeed")
+//            return speed == 0.0 ? 0.5 : speed
+//        }
+//        set {
+//            // 0.1〜1.5の範囲に制限（InfoViewControllerの仕様に合わせる）
+//            let clampedSpeed = max(0.1, min(1.5, newValue))
+//            // 小数点第2位で丸めて保存
+//            let roundedSpeed = round(clampedSpeed * 100) / 100
+//            
+//            UserDefaults.standard.set(roundedSpeed, forKey: "reproductionSpeed")
+//            
+//            // 【重要】案内音声エンジン（codeBlock2）に速度変更を反映
+//            codeBlock2.updatePlaybckSpeed(roundedSpeed)
+//            
+//            // VoiceOverが現在値を把握するために、表示上の値も更新する
+//            self.view.accessibilityValue = "\(roundedSpeed)"
+//        }
+//    }
+    var playbackSpeed: Float {
+        get {
+            let speed = UserDefaults.standard.float(forKey: "reproductionSpeed")
+            return speed == 0.0 ? 0.5 : speed
+        }
+        set {
+            let clampedSpeed = max(0.1, min(1.5, newValue))
+            // 小数点第1位までに丸める（VoiceOverが読み上げやすいように）
+            let roundedSpeed = round(clampedSpeed * 10) / 10
+            
+            UserDefaults.standard.set(roundedSpeed, forKey: "reproductionSpeed")
+            codeBlock2.updatePlaybckSpeed(roundedSpeed)
+            
+            // ログを出力して、プログラム側で値が変わっているか確認
+            print("DEBUG: 速度を \(roundedSpeed) に変更しました")
+            
+            // 文字列として明示的にセット
+            self.view.accessibilityValue = String(format: "%.1f", roundedSpeed)
+        }
+    }
+    
     
     //ジャンル(messagecategory)選択ボタン及び切り替え
     /* ジャンル(messgecategory)対応表
@@ -141,7 +184,21 @@ class NextViewController: UIViewController,UIGestureRecognizerDelegate,CLLocatio
         guideVoice.delegate = self
         
         setDefaultButtonName()
+        
+        // 1. 背景(view)の設定はすべて削除またはfalseにする
+        self.view.isAccessibilityElement = false
+
+        // 2. ジャンルボタンに「調整可能」を設定する
+        genres.isAccessibilityElement = true
+        // ボタンの機能と、数値を調整する機能の両方を持たせる
+        genres.accessibilityTraits = [.button, .adjustable]
+        
+        // VoiceOverが「一般、ボタン、0.5、調整可能。上下のスワイプで値を調整します」と喋るようになります
+        genres.accessibilityLabel = "再生速度調整"
+        updateAccessibilityValue()
+        
     }
+
     //避難所情報取得機能で使う関数　↓
     @objc func tapped(_ sender: UITapGestureRecognizer){
         //ダブルタップした時の処理
@@ -195,7 +252,7 @@ class NextViewController: UIViewController,UIGestureRecognizerDelegate,CLLocatio
         acceleX = Alpha * acceleration.x + acceleX * (1.0 - Alpha);
         acceleY = Alpha * acceleration.y + acceleY * (1.0 - Alpha);
         acceleZ = Alpha * acceleration.z + acceleZ * (1.0 - Alpha);
-        //加速度の絶対値が1.3を超えた時の処理（音声停止）
+        //加速度の絶対値が1.1を超えた時の処理（音声停止）
         
         let threshold: Double = 1.1
 
@@ -245,7 +302,32 @@ class NextViewController: UIViewController,UIGestureRecognizerDelegate,CLLocatio
     private func setupCameraSession() {
         videoCapture.setupSession()  // カメラ設定を行うメソッド。VideoCaptureModel内に定義が必要。
     }
-    
+
+    // MARK: - VoiceOver Adjustable Actions
+    // 指一本で上にスワイプした時に呼ばれる
+    // ボタンの数値を更新するメソッド
+    func updateAccessibilityValue() {
+        let speed = String(format: "%.1f", playbackSpeed)
+        genres.accessibilityValue = speed
+    }
+
+    // 3. 【重要】これらのメソッドが呼ばれるはずです
+    override func accessibilityIncrement() {
+        print("DEBUG: 実行されました（＋）") // これが出るか確認
+        playbackSpeed += 0.1
+        updateAccessibilityValue()
+        
+        // 現在の速度を直接読み上げさせる
+        UIAccessibility.post(notification: .announcement, argument: "再生速度 \(String(format: "%.1f", playbackSpeed))")
+    }
+
+    override func accessibilityDecrement() {
+        print("DEBUG: 実行されました（－）") // これが出るか確認
+        playbackSpeed -= 0.1
+        updateAccessibilityValue()
+        
+        UIAccessibility.post(notification: .announcement, argument: "再生速度 \(String(format: "%.1f", playbackSpeed))")
+    }
 }
 
 extension NextViewController: VideoCaptureDelegate {
