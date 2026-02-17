@@ -48,9 +48,17 @@ class VideoCaptureModel: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate 
         //ピクセルフォーマットを設定
         output.videoSettings =
             [ kCVPixelBufferPixelFormatTypeKey as AnyHashable as! String : Int(kCVPixelFormatType_32BGRA) ]
+        //2025 6月28日　修正
+        if UIAccessibility.isVoiceOverRunning {
+            // VoiceOver が ON のときの処理
+            let videoQueue = DispatchQueue(label: "videoQueue")
+            output.setSampleBufferDelegate(self, queue: videoQueue)
+        } else {
+            // VoiceOver が OFF のときの処理
+            //サブスレッド用のシリアルキューを用意
+            output.setSampleBufferDelegate(self, queue: DispatchQueue.main)
+        }
 
-        //サブスレッド用のシリアルキューを用意
-        output.setSampleBufferDelegate(self, queue: DispatchQueue.main)
 
         // 遅れてきたフレームは無視する
         //怪しい
@@ -108,9 +116,17 @@ class VideoCaptureModel: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate 
     }
     
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
-        DispatchQueue.main.async {
-            let img = self.captureImage(sampleBuffer) //UIImageへ変換
+        //2025 6月28日　修正
+        if UIAccessibility.isVoiceOverRunning {
+            // VoiceOver が ON のときの処理
+            let img = self.captureImage(sampleBuffer)
             self.openCVImageProcessing(image: img)
+        } else {
+            // VoiceOver が OFF のときの処理
+            DispatchQueue.main.async {
+                let img = self.captureImage(sampleBuffer) //UIImageへ変換
+                self.openCVImageProcessing(image: img)
+            }
         }
     }
     
@@ -128,37 +144,54 @@ class VideoCaptureModel: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate 
     }
     
     // sampleBufferからUIImageを作成
-    private func captureImage(_ sampleBuffer:CMSampleBuffer) -> UIImage {
-        let imageBuffer: CVImageBuffer! = CMSampleBufferGetImageBuffer(sampleBuffer)
-
-        // ベースアドレスをロック
-        CVPixelBufferLockBaseAddress(imageBuffer, CVPixelBufferLockFlags(rawValue: 0))
-
-        // 画像データの情報を取得
-        let baseAddress: UnsafeMutableRawPointer = CVPixelBufferGetBaseAddressOfPlane(imageBuffer, 0)!
-
-        let bytesPerRow: Int = CVPixelBufferGetBytesPerRow(imageBuffer)
-        let width: Int = CVPixelBufferGetWidth(imageBuffer)
-        let height: Int = CVPixelBufferGetHeight(imageBuffer)
-
-        // RGB色空間を作成
-        let colorSpace: CGColorSpace! = CGColorSpaceCreateDeviceRGB()
-
-        // Bitmap graphic contextを作成
-        let bitsPerCompornent: Int = 8
-        let bitmapInfo = CGBitmapInfo(rawValue: (CGBitmapInfo.byteOrder32Little.rawValue | CGImageAlphaInfo.premultipliedFirst.rawValue) as UInt32)
-        let newContext: CGContext! = CGContext(data: baseAddress, width: width, height: height, bitsPerComponent: bitsPerCompornent, bytesPerRow: bytesPerRow, space: colorSpace, bitmapInfo: bitmapInfo.rawValue) as CGContext?
-
-        // Quartz imageを作成
-        let imageRef: CGImage! = newContext!.makeImage()
-
-        // ベースアドレスをアンロック
-        CVPixelBufferUnlockBaseAddress(imageBuffer, CVPixelBufferLockFlags(rawValue: 0))
-
-        // UIImageを作成
-        let resultImage: UIImage = UIImage(cgImage: imageRef)
-
-        return resultImage
-    }
+    // 安全性重視の「完全データコピー」版
+        private func captureImage(_ sampleBuffer: CMSampleBuffer) -> UIImage {
+            // 画像バッファを取得
+            guard let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else {
+                return UIImage()
+            }
+            
+            // 1. バッファをロック（読み取り中に消されないようにする）
+            CVPixelBufferLockBaseAddress(imageBuffer, .readOnly)
+            
+            // 2. 画像情報を取得
+            let baseAddress = CVPixelBufferGetBaseAddress(imageBuffer)
+            let width = CVPixelBufferGetWidth(imageBuffer)
+            let height = CVPixelBufferGetHeight(imageBuffer)
+            let bytesPerRow = CVPixelBufferGetBytesPerRow(imageBuffer)
+            
+            // 3. カラースペースの設定（RGB）
+            let colorSpace = CGColorSpaceCreateDeviceRGB()
+            
+            // 4. ビットマップ情報の定義 (32bit BGRA形式)
+            // ここが少し複雑ですが、OpenCVが好む形式に合わせています
+            let bitmapInfo = CGBitmapInfo(rawValue: (CGBitmapInfo.byteOrder32Little.rawValue | CGImageAlphaInfo.premultipliedFirst.rawValue) as UInt32)
+            
+            // 5. 新しい描画コンテキストを作成（ここでメモリが確保されます）
+            guard let context = CGContext(data: baseAddress,
+                                          width: width,
+                                          height: height,
+                                          bitsPerComponent: 8,
+                                          bytesPerRow: bytesPerRow,
+                                          space: colorSpace,
+                                          bitmapInfo: bitmapInfo.rawValue) else {
+                CVPixelBufferUnlockBaseAddress(imageBuffer, .readOnly)
+                return UIImage()
+            }
+            
+            // 6. 画像を作成（ディープコピー）
+            guard let cgImage = context.makeImage() else {
+                CVPixelBufferUnlockBaseAddress(imageBuffer, .readOnly)
+                return UIImage()
+            }
+            
+            // 7. バッファのロック解除（もうcgImageにコピーされたので解除してOK）
+            CVPixelBufferUnlockBaseAddress(imageBuffer, .readOnly)
+            
+            // 8. UIImageに変換（向きは .up に戻しました）
+            let image = UIImage(cgImage: cgImage, scale: 1.0, orientation: .up)
+            
+            return image
+        }
 }
 
