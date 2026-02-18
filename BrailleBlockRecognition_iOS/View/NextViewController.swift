@@ -197,7 +197,7 @@ class NextViewController: UIViewController,UIGestureRecognizerDelegate,CLLocatio
         acceleZ = Alpha * acceleration.z + acceleZ * (1.0 - Alpha);
         //加速度の絶対値が1.3を超えた時の処理（音声停止）
         
-        let threshold: Double = 1.1
+        let threshold: Double = 1.4
 
             if acceleX > threshold || acceleY > threshold || acceleZ > threshold ||
                acceleX < -threshold || acceleY < -threshold || acceleZ < -threshold {
@@ -385,7 +385,7 @@ extension NextViewController: AudioPlayerDelegate {
         print("didFinishPlaying")
         // シェイク検知を開始
             if motionManager.isAccelerometerAvailable {
-                motionManager.accelerometerUpdateInterval = 0.2
+                motionManager.accelerometerUpdateInterval = 0.1
                 motionManager.startAccelerometerUpdates(
                     to: OperationQueue.current!,
                     withHandler: { (accelData: CMAccelerometerData?, error: Error?) in
