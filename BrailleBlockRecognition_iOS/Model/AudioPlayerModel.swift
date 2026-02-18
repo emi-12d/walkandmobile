@@ -30,6 +30,11 @@ class AudioPlayerModel: NSObject {
         //iPhoneの読み上げ機能を指定している
         let read = AVSpeechUtterance(string: manuscript)
         read.voice = AVSpeechSynthesisVoice(language: lang)
+        
+        //最新の保存された速度を読み込む
+        let savedSpeed = UserDefaults.standard.float(forKey: "reproductionSpeed")
+        self.playbackSpeed = (savedSpeed == 0) ? 0.5 : savedSpeed
+        
         //読み上げ速度：Min0.1~Max1.0 標準0.5
         read.rate = self.playbackSpeed
         // 案内文を読み上げ

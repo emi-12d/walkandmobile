@@ -51,11 +51,11 @@ class ViewController: UIViewController, UIGestureRecognizerDelegate,CLLocationMa
     //変更 2024/07/21
     var playbackSpeed: Float {
         get {
-            let speed = UserDefaults.standard.float(forKey: "reprodutionSpeed")
+            let speed = UserDefaults.standard.float(forKey: "reproductionSpeed")
             return speed == 0.0 ? 0.5 : speed
         }
         set{
-            UserDefaults.standard.setValue(newValue, forKey: "reprodutionSpeed")//newValueとはなんだ、怪しい
+            UserDefaults.standard.setValue(newValue, forKey: "reproductionSpeed")//newValueとはなんだ、怪しい
             //codeBlock2.updatePlaybckSpeed(newValue)
         }
     }

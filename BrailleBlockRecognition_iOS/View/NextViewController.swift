@@ -142,6 +142,51 @@ class NextViewController: UIViewController,UIGestureRecognizerDelegate,CLLocatio
         
         setDefaultButtonName()
     }
+    @objc func handleSwipe(_ gesture: UISwipeGestureRecognizer) {
+        // 速度変更処理を呼び出し
+        if gesture.direction == .up {
+            // 上スワイプ：速度を上げる
+            changeSpeechRate(delta: 0.1)
+        } else if gesture.direction == .down {
+            // 下スワイプ：速度を下げる
+            changeSpeechRate(delta: -0.1)
+        }
+    }
+    func changeSpeechRate(delta: Float) {
+        //現在の値を読み込む
+        var currentRate = UserDefaults.standard.float(forKey: "reproductionSpeed")
+        if currentRate == 0 { currentRate = 0.5 }
+
+        // 計算して、範囲制限と四捨五入を行う
+        var newRate = currentRate + delta
+        newRate = max(0.1, min(1.0, newRate))
+        newRate = round(newRate * 10) / 10  // 小数第1位で丸める
+
+        //保存する
+        UserDefaults.standard.set(newRate, forKey: "reproductionSpeed")
+
+        //VoiceOverに通知する
+        let displayRate = String(format: "%.1f", newRate)
+        UIAccessibility.post(notification: .announcement, argument: "速度 \(displayRate)")
+    }
+    // VoiceOverオン時に「3本指」で上下スワイプした時に呼ばれます
+        override func accessibilityScroll(_ direction: UIAccessibilityScrollDirection) -> Bool {
+            
+            if direction == .up {
+                // 3本指 上スワイプ：速度アップ
+                changeSpeechRate(delta: 0.1)
+                return true
+                
+            } else if direction == .down {
+                // 3本指 下スワイプ：速度ダウン
+                changeSpeechRate(delta: -0.1)
+                return true
+            }
+            
+            return false
+        }
+
+    
     //避難所情報取得機能で使う関数　↓
     @objc func tapped(_ sender: UITapGestureRecognizer){
         //ダブルタップした時の処理
@@ -197,7 +242,7 @@ class NextViewController: UIViewController,UIGestureRecognizerDelegate,CLLocatio
         acceleZ = Alpha * acceleration.z + acceleZ * (1.0 - Alpha);
         //加速度の絶対値が1.3を超えた時の処理（音声停止）
         
-        let threshold: Double = 1.4
+        let threshold: Double = 1.3
 
             if acceleX > threshold || acceleY > threshold || acceleZ > threshold ||
                acceleX < -threshold || acceleY < -threshold || acceleZ < -threshold {
