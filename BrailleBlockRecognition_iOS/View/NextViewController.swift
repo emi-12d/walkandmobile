@@ -58,6 +58,23 @@ class NextViewController: UIViewController,UIGestureRecognizerDelegate,CLLocatio
     let Alpha = 0.4
     var flg: Bool = false
     
+    // デバッグ
+    private let debugGenreLabel = UILabel()
+    // デバッグラベルの表示を更新（引数なし：ボタン操作時、引数あり：データ認識時）
+        func updateDebugLabel(activeKey: String? = nil) {
+            let selectedInfo = "選択中: \(genre) (\(genreName))"
+            
+            if let key = activeKey {
+                // キーの末尾1文字が、実際に読み込まれたデータのジャンル番号
+                let activeGenreId = String(key.suffix(1))
+                debugGenreLabel.text = "\(selectedInfo) \n読込中Key: \(key) (Genre:\(activeGenreId))"
+                debugGenreLabel.numberOfLines = 0 // 複数行表示を許可
+                debugGenreLabel.frame.size.height = 60 // 少し高さを広げる
+            } else {
+                debugGenreLabel.text = selectedInfo
+            }
+        }
+    
     
     //ジャンル(messagecategory)選択ボタン及び切り替え
     /* ジャンル(messgecategory)対応表
@@ -91,6 +108,7 @@ class NextViewController: UIViewController,UIGestureRecognizerDelegate,CLLocatio
             tapCount = 0
         }
         genreName = genres.currentTitle ?? "error"
+        updateDebugLabel()
     }
    
     
@@ -103,6 +121,7 @@ class NextViewController: UIViewController,UIGestureRecognizerDelegate,CLLocatio
         urlMessage = ""
         genres.setTitle(NSLocalizedString(genreName, comment: ""), for: .normal)
         
+        updateDebugLabel()
         // 音声が止まったらセンサも止める（無駄な動作防止）
         stopAccelerometer()
     }
@@ -125,6 +144,20 @@ class NextViewController: UIViewController,UIGestureRecognizerDelegate,CLLocatio
         super.viewDidLoad()
         
         self.navigationItem.hidesBackButton = true
+        
+        // デバッグ
+        debugGenreLabel.frame = CGRect(x: 20, y: 100, width: 250, height: 40) // 画面左上に配置
+                debugGenreLabel.backgroundColor = UIColor.black.withAlphaComponent(0.7) // 背景を半透明の黒に
+                debugGenreLabel.textColor = .yellow // 文字を黄色に
+                debugGenreLabel.font = UIFont.boldSystemFont(ofSize: 16)
+                debugGenreLabel.layer.cornerRadius = 5
+                debugGenreLabel.clipsToBounds = true
+                debugGenreLabel.isAccessibilityElement = false // VoiceOverには読ませない
+                
+                self.view.addSubview(debugGenreLabel)
+                self.view.bringSubviewToFront(debugGenreLabel)
+                updateDebugLabel() // 初回の表示をセット
+        
         //サーバーからデータ取得
         //codeBlock.fetchGuideInformation()
         //省電力モードによるカメラの起動の処理
@@ -283,6 +316,7 @@ class NextViewController: UIViewController,UIGestureRecognizerDelegate,CLLocatio
         genre = "0"
         genres.setTitle(NSLocalizedString("normal", comment: ""), for: .normal)
         genreName = NSLocalizedString("normal", comment: "")
+        updateDebugLabel()
     }
     
     // 認識中　赤枠線表示
@@ -314,6 +348,9 @@ extension NextViewController: VideoCaptureDelegate {
         //guidance.text = guideText
         // ある点字ブロックのキー作成
         let guidanceKey = code + angle + genre
+        //デバッグ
+        print("ガイダンスキー" + guidanceKey)
+        
         // 引数がSting型のためint型に変換
         let code = Int(code) ?? 0
         let angle = Int(angle) ?? -1
@@ -330,7 +367,6 @@ extension NextViewController: VideoCaptureDelegate {
         if code > 0 && angle > -1{
 //            changeColorFrame()
           
-           
             // 読み方を取得
             let resultCalls = codeBlock.resultValue(key: guidanceKey, type: .call)
             let resultCall = resultCalls.1 ?? NSLocalizedString("Unregistered", comment: "")
@@ -338,7 +374,14 @@ extension NextViewController: VideoCaptureDelegate {
             // 案内文を取得
             let resultMessages = codeBlock.resultValue(key: guidanceKey, type: .guidance)
             let key = resultMessages.0
+
+            //デバッグ
+            print("キー" + key)
             
+            // デバッグ
+            DispatchQueue.main.async {
+                            self.updateDebugLabel(activeKey: key)
+                        }
             
             //データベースのキーと取得したキーを照合し、違ったら、ジャンルボタンを一般に変更
             if guidanceKey != key {
@@ -422,6 +465,7 @@ extension NextViewController: AudioPlayerDelegate {
         guideVoice.process = false
         //現在のジャンルに設定
         genres.setTitle(NSLocalizedString(genreName, comment: ""), for: .normal)
+        updateDebugLabel()
         //カメラ画面の枠色をクリア
 //        cameraImageView.layer.borderColor = UIColor.clear.cgColor
         //videoCapture.startCapturing()
@@ -468,6 +512,7 @@ extension NextViewController: AudioPlayerDelegate {
         guideVoice.process = false
         //現在のジャンルに設定
         genres.setTitle(NSLocalizedString(genreName, comment: ""), for: .normal)
+         updateDebugLabel()
         //カメラ画面の枠色をクリア
 //        cameraImageView.layer.borderColor = UIColor.clear.cgColor
         //videoCapture.startCapturing()
@@ -491,5 +536,3 @@ extension NextViewController: SFSafariViewControllerDelegate {
         safariVC = nil
     }
 }
-
-
