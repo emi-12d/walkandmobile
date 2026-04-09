@@ -430,6 +430,7 @@ extension ViewController: VideoCaptureDelegate {
         guidance.text = guideText
         // ある点字ブロックのキー作成
         let guidanceKey = code + angle + genre
+        print("ガイダンスキー" + guidanceKey)
         // 引数がSting型のためint型に変換
         let code = Int(code) ?? 0
         let angle = Int(angle) ?? -1
@@ -454,6 +455,7 @@ extension ViewController: VideoCaptureDelegate {
             // 案内文を取得
             let resultMessages = codeBlock.resultValue(key: guidanceKey, type: .guidance)
             let key = resultMessages.0
+            print("キー" + key)
             
             
             //データベースのキーと取得したキーを照合し、違ったら、ジャンルボタンを一般に変更

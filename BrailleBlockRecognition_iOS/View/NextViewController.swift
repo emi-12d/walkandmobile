@@ -30,8 +30,8 @@ class NextViewController: UIViewController,UIGestureRecognizerDelegate,CLLocatio
     let captureSession = AVCaptureSession()//変更箇所
     let locationManager = CLLocationManager()
     
-    
-    
+    //読み上げ速度変更
+    let speedSpeechSynthesizer = AVSpeechSynthesizer()
    
     
     var safariVC: SFSafariViewController?//Safariアプリに飛ばす
@@ -159,15 +159,27 @@ class NextViewController: UIViewController,UIGestureRecognizerDelegate,CLLocatio
 
         // 計算して、範囲制限と四捨五入を行う
         var newRate = currentRate + delta
-        newRate = max(0.1, min(1.0, newRate))
+        newRate = max(0.1, min(1.5, newRate))
         newRate = round(newRate * 10) / 10  // 小数第1位で丸める
 
         //保存する
         UserDefaults.standard.set(newRate, forKey: "reproductionSpeed")
-
-        //VoiceOverに通知する
+        
         let displayRate = String(format: "%.1f", newRate)
-        UIAccessibility.post(notification: .announcement, argument: "速度 \(displayRate)")
+        let speechText = "速度 \(displayRate)"
+        
+        // AVSpeechUtterance（読み上げる内容）の設定
+        let utterance = AVSpeechUtterance(string: speechText)
+        utterance.voice = AVSpeechSynthesisVoice(language: "ja-JP")
+        
+        // AVSpeechUtteranceのrateは、0.0(遅い)〜1.5(速い)で指定します
+        utterance.rate = newRate
+
+        // 以前の速度アナウンスがまだ流れていれば停止させてから再生
+        if speedSpeechSynthesizer.isSpeaking {
+            speedSpeechSynthesizer.stopSpeaking(at: .immediate)
+        }
+        speedSpeechSynthesizer.speak(utterance)
     }
     // VoiceOverオン時に「3本指」で上下スワイプした時に呼ばれます
         override func accessibilityScroll(_ direction: UIAccessibilityScrollDirection) -> Bool {
