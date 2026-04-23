@@ -158,8 +158,11 @@ class NextViewController: UIViewController,UIGestureRecognizerDelegate,CLLocatio
                 self.view.bringSubviewToFront(debugGenreLabel)
                 updateDebugLabel() // 初回の表示をセット
         
+
         //サーバーからデータ取得
-        //codeBlock.fetchGuideInformation()
+        codeBlock.fetchGuideInformation{
+            self.videoCapture.startCapturing()
+        }
         //省電力モードによるカメラの起動の処理
         
         //変更 2024/07/28
