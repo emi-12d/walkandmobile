@@ -376,6 +376,7 @@ extension NextViewController: VideoCaptureDelegate {
             let key = resultMessages.0
 
             //デバッグ
+            print("リザルトコール" + resultCalls.0)
             print("キー" + key)
             
             // デバッグ
