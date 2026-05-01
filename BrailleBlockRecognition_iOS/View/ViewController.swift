@@ -272,6 +272,10 @@ class ViewController: UIViewController, UIGestureRecognizerDelegate,CLLocationMa
             playbackSpeed = 0.5
         }
         
+        //セキュリティの検証
+        print("セキュリティ")
+        print(UserDefaults.standard.dictionaryRepresentation())
+        
         //変更 2024/09/17
         //codeBlock2.updatePlaybckSpeed(playbackSpeed)//これがあるとアプリを再起動したときに速度が変わってしまう
         //2025/11/23 検証用
