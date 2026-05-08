@@ -101,7 +101,28 @@ class NextViewController: UIViewController,UIGestureRecognizerDelegate,CLLocatio
         
         guideText = ""
         urlMessage = ""
+        
         genres.setTitle(NSLocalizedString(genreName, comment: ""), for: .normal)
+        //cameraImageView.layer.borderColor = UIColor.clear.cgColor
+        
+        if tapCount == 1 {
+            genre = "0"
+            genres.setTitle(NSLocalizedString("normal", comment: ""), for: .normal)
+            genreName = NSLocalizedString("normal", comment: "")
+        } else if tapCount == 2 {
+            genre = "1"
+            genres.setTitle(NSLocalizedString("detail", comment: ""), for: .normal)
+            genreName = NSLocalizedString("detail", comment: "")
+        } else if tapCount == 3 {
+            genre = "2"
+            genres.setTitle(NSLocalizedString("evacuation", comment: ""), for: .normal)
+            genreName = NSLocalizedString("evacuation", comment: "")
+        } else if tapCount == 0 {
+            genre = "3"
+            genres.setTitle(NSLocalizedString("exclusive", comment: ""), for: .normal)
+            genreName = NSLocalizedString("exclusive", comment: "")
+        }
+        genreName = genres.currentTitle ?? "error"
 
         // 音声が止まったらセンサも止める（無駄な動作防止）
         stopAccelerometer()
@@ -276,7 +297,6 @@ class NextViewController: UIViewController,UIGestureRecognizerDelegate,CLLocatio
     // ボタンの初期設定
     func setDefaultButtonName(){
         genres.setTitle(NSLocalizedString("normal", comment: ""), for: .normal)
-        print("aaaaaaaaaa")
         genre = "0"
         tapCount += 1
     }
@@ -318,8 +338,6 @@ extension NextViewController: VideoCaptureDelegate {
         //guidance.text = guideText
         // ある点字ブロックのキー作成
         let guidanceKey = code + angle + genre
-        //デバッグ
-        print("ガイダンスキー" + guidanceKey)
         
         // 引数がSting型のためint型に変換
         let code = Int(code) ?? 0
@@ -345,17 +363,11 @@ extension NextViewController: VideoCaptureDelegate {
             let resultMessages = codeBlock.resultValue(key: guidanceKey, type: .guidance)
             let key = resultMessages.0
 
-            //デバッグ
-            print("リザルトコール" + resultCalls.0)
-            print("キー" + key)
-            
             
             //データベースのキーと取得したキーを照合し、違ったら、ジャンルボタンを一般に変更
             if guidanceKey != key {
                 setSwitchButtonName()
             }
-            
-            let resultMessage = resultMessages.1 ?? NSLocalizedString("Unregistered", comment: "")
             
             
             if guideVoice.process { return }
@@ -461,7 +473,6 @@ extension NextViewController: AudioPlayerDelegate {
                     }
                 )
             }
-        videoCapture.startCapturing()
        
         guard let webView = safariVC else { return }
         webView.delegate = self
