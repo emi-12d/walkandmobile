@@ -1478,25 +1478,6 @@ static int FHomo(const Mat& image, vector<vector<cv::Point> >& sq, int sqindex, 
 
                 int invmean=0;
                 
-                //2025/12/20 検証
-                long tempCode = Getcode(im_out,gx,gy,invmean,LR);
-                if (tempCode > 0) {
-                    // 成功：青色
-                    polylines(image, sq[n], true, Scalar(255, 0, 0), 3);
-                } else if (tempCode == -2) {
-                    // 三角形が見つからないエラー：黄色
-                    // (変形後の画像の中で▲の位置が特定できていません)
-                    polylines(image, sq[n], true, Scalar(0, 255, 255), 3);
-                } else if (tempCode == -3) {
-                    // 点のカウントエラー：紫色 (Scalarは B, G, R なので 255, 0, 255)
-                    // (▲は見つかったが、点の白黒判定に失敗しています)
-                    polylines(image, sq[n], true, Scalar(255, 0, 255), 3);
-                } else {
-                    // その他のエラー：白色
-                    polylines(image, sq[n], true, Scalar(255, 255, 255), 3);
-                }
-                
-                
                 
                 code[cindex] = Getcode(im_out,gx,gy,invmean,LR);// 三角形の直角頂点を使うかは検討要す
                 invmeanf=invmean;
@@ -1819,8 +1800,6 @@ static long Getcode( const Mat& image, int *X, int *Y,int &invmean, int LR)
     //if ((max < 150) || (max > 350)) return -1;/// max < 450 は大きすぎ?? 2019-2-18
     //if ((max < 120) || (max > 450)) return -1;/// min 150 はちいさい　350から380へ変更　2019-11-4
     
-    //2025/12/20 検証
-    if ((max < 120) || (max > MaxblackPiont)) return -3; // ★変更: 点のカウント失敗は -3
     //if ((max < 120) || (max > MaxblackPiont)) return -1;/// min 150 はちいさい　450から600へ変更　2020-8
     
 //////////////////////////////////以下　黒点数により　０か１に変換/////////////////////
@@ -1849,11 +1828,6 @@ static long Getcode( const Mat& image, int *X, int *Y,int &invmean, int LR)
                 break;
         }
     }
-    //2025/12/20 検証
-    //if (val==0) return -1;
-    if (val==0) return -3;
-    
-    
     return val;
 }
 

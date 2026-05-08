@@ -30,8 +30,8 @@ class NextViewController: UIViewController,UIGestureRecognizerDelegate,CLLocatio
     let captureSession = AVCaptureSession()//変更箇所
     let locationManager = CLLocationManager()
     
-    
-    
+    //読み上げ速度変更
+    let speedSpeechSynthesizer = AVSpeechSynthesizer()
    
     
     var safariVC: SFSafariViewController?//Safariアプリに飛ばす
@@ -94,19 +94,39 @@ class NextViewController: UIViewController,UIGestureRecognizerDelegate,CLLocatio
     }
    
     
-    
-    
-    
     func stopmotion() {
-        //guideVoice.stop()
+        // 音声を停止させる処理を追加
+        guideVoice.stop()
+        codeBlock2.stopAudio()
+        
         guideText = ""
         urlMessage = ""
-//        code.text = "\(0)"
-//        angle.text = "\(0)"
+        
         genres.setTitle(NSLocalizedString(genreName, comment: ""), for: .normal)
-//        cameraImageView.layer.borderColor = UIColor.clear.cgColor
+        //cameraImageView.layer.borderColor = UIColor.clear.cgColor
+        
+        if tapCount == 1 {
+            genre = "0"
+            genres.setTitle(NSLocalizedString("normal", comment: ""), for: .normal)
+            genreName = NSLocalizedString("normal", comment: "")
+        } else if tapCount == 2 {
+            genre = "1"
+            genres.setTitle(NSLocalizedString("detail", comment: ""), for: .normal)
+            genreName = NSLocalizedString("detail", comment: "")
+        } else if tapCount == 3 {
+            genre = "2"
+            genres.setTitle(NSLocalizedString("evacuation", comment: ""), for: .normal)
+            genreName = NSLocalizedString("evacuation", comment: "")
+        } else if tapCount == 0 {
+            genre = "3"
+            genres.setTitle(NSLocalizedString("exclusive", comment: ""), for: .normal)
+            genreName = NSLocalizedString("exclusive", comment: "")
+        }
+        genreName = genres.currentTitle ?? "error"
+
+        // 音声が止まったらセンサも止める（無駄な動作防止）
+        stopAccelerometer()
     }
-    
     
     
     //自動スリープを無効化
@@ -126,8 +146,12 @@ class NextViewController: UIViewController,UIGestureRecognizerDelegate,CLLocatio
         super.viewDidLoad()
         
         self.navigationItem.hidesBackButton = true
+        
+
         //サーバーからデータ取得
-        //codeBlock.fetchGuideInformation()
+        codeBlock.fetchGuideInformation{
+            self.videoCapture.startCapturing()
+        }
         //省電力モードによるカメラの起動の処理
         
         //変更 2024/07/28
@@ -139,8 +163,67 @@ class NextViewController: UIViewController,UIGestureRecognizerDelegate,CLLocatio
         //インスタンスアクセス許可
         codeBlock2.nextViewController = self
         
+        guideVoice.delegate = self
+        
         setDefaultButtonName()
     }
+    @objc func handleSwipe(_ gesture: UISwipeGestureRecognizer) {
+        // 速度変更処理を呼び出し
+        if gesture.direction == .up {
+            // 上スワイプ：速度を上げる
+            changeSpeechRate(delta: 0.1)
+        } else if gesture.direction == .down {
+            // 下スワイプ：速度を下げる
+            changeSpeechRate(delta: -0.1)
+        }
+    }
+    func changeSpeechRate(delta: Float) {
+        //現在の値を読み込む
+        var currentRate = UserDefaults.standard.float(forKey: "reproductionSpeed")
+        if currentRate == 0 { currentRate = 0.5 }
+
+        // 計算して、範囲制限と四捨五入を行う
+        var newRate = currentRate + delta
+        newRate = max(0.1, min(1.5, newRate))
+        newRate = round(newRate * 10) / 10  // 小数第1位で丸める
+
+        //保存する
+        UserDefaults.standard.set(newRate, forKey: "reproductionSpeed")
+        
+        let displayRate = String(format: "%.1f", newRate)
+        let speechText = "速度 \(displayRate)"
+        
+        // AVSpeechUtterance（読み上げる内容）の設定
+        let utterance = AVSpeechUtterance(string: speechText)
+        utterance.voice = AVSpeechSynthesisVoice(language: "ja-JP")
+        
+        // AVSpeechUtteranceのrateは、0.0(遅い)〜1.5(速い)で指定します
+        utterance.rate = newRate
+
+        // 以前の速度アナウンスがまだ流れていれば停止させてから再生
+        if speedSpeechSynthesizer.isSpeaking {
+            speedSpeechSynthesizer.stopSpeaking(at: .immediate)
+        }
+        speedSpeechSynthesizer.speak(utterance)
+    }
+    // VoiceOverオン時に「3本指」で上下スワイプした時に呼ばれます
+        override func accessibilityScroll(_ direction: UIAccessibilityScrollDirection) -> Bool {
+            
+            if direction == .up {
+                // 3本指 上スワイプ：速度アップ
+                changeSpeechRate(delta: 0.1)
+                return true
+                
+            } else if direction == .down {
+                // 3本指 下スワイプ：速度ダウン
+                changeSpeechRate(delta: -0.1)
+                return true
+            }
+            
+            return false
+        }
+
+    
     //避難所情報取得機能で使う関数　↓
     @objc func tapped(_ sender: UITapGestureRecognizer){
         //ダブルタップした時の処理
@@ -195,9 +278,14 @@ class NextViewController: UIViewController,UIGestureRecognizerDelegate,CLLocatio
         acceleY = Alpha * acceleration.y + acceleY * (1.0 - Alpha);
         acceleZ = Alpha * acceleration.z + acceleZ * (1.0 - Alpha);
         //加速度の絶対値が1.3を超えた時の処理（音声停止）
-        if acceleX > 1.3 || acceleY > 1.3 || acceleZ > 1.3 || acceleX < -1.3 || acceleY < -1.3 || acceleZ < -1.3 {
-            stopmotion()
-        }
+        
+        let threshold: Double = 1.3
+
+            if acceleX > threshold || acceleY > threshold || acceleZ > threshold ||
+               acceleX < -threshold || acceleY < -threshold || acceleZ < -threshold {
+                print("シェイクを検知しました！")
+                stopmotion()
+            }
     }
     
     //加速度の測定を停止する
@@ -209,7 +297,6 @@ class NextViewController: UIViewController,UIGestureRecognizerDelegate,CLLocatio
     // ボタンの初期設定
     func setDefaultButtonName(){
         genres.setTitle(NSLocalizedString("normal", comment: ""), for: .normal)
-        print("aaaaaaaaaa")
         genre = "0"
         tapCount += 1
     }
@@ -231,6 +318,7 @@ class NextViewController: UIViewController,UIGestureRecognizerDelegate,CLLocatio
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         videoCapture.stopCapturing()
+        stopAccelerometer() // 追加
     }
     
     //変更 2024/07/28
@@ -250,6 +338,7 @@ extension NextViewController: VideoCaptureDelegate {
         //guidance.text = guideText
         // ある点字ブロックのキー作成
         let guidanceKey = code + angle + genre
+        
         // 引数がSting型のためint型に変換
         let code = Int(code) ?? 0
         let angle = Int(angle) ?? -1
@@ -266,7 +355,6 @@ extension NextViewController: VideoCaptureDelegate {
         if code > 0 && angle > -1{
 //            changeColorFrame()
           
-           
             // 読み方を取得
             let resultCalls = codeBlock.resultValue(key: guidanceKey, type: .call)
             let resultCall = resultCalls.1 ?? NSLocalizedString("Unregistered", comment: "")
@@ -274,14 +362,12 @@ extension NextViewController: VideoCaptureDelegate {
             // 案内文を取得
             let resultMessages = codeBlock.resultValue(key: guidanceKey, type: .guidance)
             let key = resultMessages.0
-            
+
             
             //データベースのキーと取得したキーを照合し、違ったら、ジャンルボタンを一般に変更
             if guidanceKey != key {
                 setSwitchButtonName()
             }
-            
-            let resultMessage = resultMessages.1 ?? NSLocalizedString("Unregistered", comment: "")
             
             
             if guideVoice.process { return }
@@ -376,18 +462,17 @@ extension NextViewController: AudioPlayerDelegate {
     // 読み取り音が鳴り終わったら呼び出される
     func didFinishPlaying() {
         print("didFinishPlaying")
-        //シェイクの設定↓
-        if motionManager.isAccelerometerAvailable {
-            // intervalの設定 [sec]
-            motionManager.accelerometerUpdateInterval = 0.2
-            // センサー値の取得開始
-            motionManager.startAccelerometerUpdates(
-                to: OperationQueue.current!,
-                withHandler: {(accelData: CMAccelerometerData?, errorOC: Error?) in
-                    self.lowpassFilter(acceleration: accelData!.acceleration)
-            })
-        }
-        videoCapture.startCapturing()
+        // シェイク検知を開始
+            if motionManager.isAccelerometerAvailable {
+                motionManager.accelerometerUpdateInterval = 0.1
+                motionManager.startAccelerometerUpdates(
+                    to: OperationQueue.current!,
+                    withHandler: { (accelData: CMAccelerometerData?, error: Error?) in
+                        guard let data = accelData else { return }
+                        self.lowpassFilter(acceleration: data.acceleration)
+                    }
+                )
+            }
        
         guard let webView = safariVC else { return }
         webView.delegate = self
@@ -427,5 +512,3 @@ extension NextViewController: SFSafariViewControllerDelegate {
         safariVC = nil
     }
 }
-
-
