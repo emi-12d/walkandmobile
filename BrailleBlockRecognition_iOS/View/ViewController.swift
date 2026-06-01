@@ -272,10 +272,6 @@ class ViewController: UIViewController, UIGestureRecognizerDelegate,CLLocationMa
             playbackSpeed = 0.5
         }
         
-        //セキュリティの検証
-        print("セキュリティ")
-        print(UserDefaults.standard.dictionaryRepresentation())
-        
         //変更 2024/09/17
         //codeBlock2.updatePlaybckSpeed(playbackSpeed)//これがあるとアプリを再起動したときに速度が変わってしまう
         //2025/11/23 検証用
@@ -479,9 +475,13 @@ extension ViewController: VideoCaptureDelegate {
             // 読み方を取得
             codeBlock2.checkDeviceLocation(Code: code, Angle: angle, Genre: genre)
             //resultCallsの２番目（type）の値がnilであればUnregisteredが入る
-        
+            
+            // 登録されていないコードを読み取った時の処理
+            if resultMessage == "" {
+                guideText = "未登録"
+            }
             // 案内文にURLが入っている場合、読み方を表示し、読み方をアナウンスする
-            if resultMessage.prefix(4) == "http"{
+            else if resultMessage.prefix(4) == "http"{
                 guideText = resultCall
                 voiceGuidance = resultCall
                 urlMessage = resultMessage

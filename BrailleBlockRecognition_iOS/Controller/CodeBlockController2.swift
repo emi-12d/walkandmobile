@@ -15,6 +15,7 @@ class CodeBlockController2 : UIViewController{
     private var isFetchingURL = false
     var player: AVPlayer!
     var playerLayer: AVPlayerLayer!
+    private var statusObserver: NSKeyValueObservation? //再生状態の監視
     private var networkMonitor: NWPathMonitor!
     private let queue = DispatchQueue(label: "com.networkconfig")
     private var isMonitoringStarted = false
@@ -212,6 +213,21 @@ class CodeBlockController2 : UIViewController{
             return
         }
         let playerItem = AVPlayerItem(url: url)
+        
+        // サーバー上にファイルが存在しない場合を検知
+        statusObserver = playerItem.observe(\.status, options: [.new]) { [weak self] item, _ in guard let self = self else { return }
+                    
+            if item.status == .failed {
+                print("サーバーに音声ファイルが見つかりません。未登録として処理します。")
+                self.guideVoice.echo(manuscript: "未登録です", lang: "ja")
+                
+                //　音声が終わる頃（1.5秒後）に、強制的に完了処理を呼び出してカメラのフリーズを解除
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                    self.playerDidFinish(notification: Notification(name: .AVPlayerItemDidPlayToEndTime))
+                }
+            }
+        }
+        
         self.player = AVPlayer(playerItem: playerItem)
         self.playerLayer = AVPlayerLayer(player: self.player)
         playerLayer.frame = view.bounds
@@ -235,6 +251,10 @@ class CodeBlockController2 : UIViewController{
     @objc func stopAudio(){
         player?.pause()
         player?.seek(to: .zero)
+        
+        // エラー監視を解除
+        statusObserver?.invalidate()
+        statusObserver = nil
         
         //変更 2024/06/27
         player?.replaceCurrentItem(with: nil)
