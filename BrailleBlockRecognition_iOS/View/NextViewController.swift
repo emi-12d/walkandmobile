@@ -128,6 +128,45 @@ class NextViewController: UIViewController,UIGestureRecognizerDelegate,CLLocatio
         stopAccelerometer()
     }
     
+    func finishmotion(){
+        guideVoice.stop()
+        
+        //変更 2024/06/19
+        codeBlock2.stopAudio()
+        videoCapture.stopCapturing()
+        videoCapture.startCapturing()
+        
+        //guideText = ""
+        //urlMessage = ""
+        //code.text = "\(0)"
+        //angle.text = "\(0)"
+        genres.setTitle(NSLocalizedString(genreName, comment: ""), for: .normal)
+        //cameraImageView.layer.borderColor = UIColor.clear.cgColor
+        
+        //変更 2024/11/20
+        //一般以外のジャンルに情報がない場合、一般のデータが表示されるが再度、元のジャンルに戻すリセット処理
+        if tapCount == 1 {
+            genre = "0"
+            genres.setTitle(NSLocalizedString("normal", comment: ""), for: .normal)
+            genreName = NSLocalizedString("normal", comment: "")
+        } else if tapCount == 2 {
+            genre = "1"
+            genres.setTitle(NSLocalizedString("detail", comment: ""), for: .normal)
+            genreName = NSLocalizedString("detail", comment: "")
+        } else if tapCount == 3 {
+            genre = "2"
+            genres.setTitle(NSLocalizedString("evacuation", comment: ""), for: .normal)
+            genreName = NSLocalizedString("evacuation", comment: "")
+        } else if tapCount == 0 {
+            genre = "3"
+            genres.setTitle(NSLocalizedString("exclusive", comment: ""), for: .normal)
+            genreName = NSLocalizedString("exclusive", comment: "")
+        }
+        genreName = genres.currentTitle ?? "error"
+        //変更 2024/07/21
+        //codeBlock2.updatePlaybckSpeed(playbackSpeed)
+        
+    }
     
     //自動スリープを無効化
     override func viewWillAppear(_ animated: Bool) {
@@ -365,6 +404,9 @@ extension NextViewController: VideoCaptureDelegate {
 
             
             //データベースのキーと取得したキーを照合し、違ったら、ジャンルボタンを一般に変更
+            print("ガイダンスキーとキー")
+            print(guidanceKey)
+            print(key)
             if guidanceKey != key {
                 setSwitchButtonName()
             }

@@ -98,6 +98,7 @@ class CodeBlockController2 : UIViewController{
         //変更 2024/06/28
         // 再生が終了したときの処理をここに記述
         viewController?.finishmotion()
+        nextViewController?.finishmotion()
         viewController?.playerDidFinishPlaying(notification: notification)
         nextViewController?.playerDidFinishPlaying(notification: notification)
         print("ストリーミング再生が終了しました")
@@ -206,6 +207,7 @@ class CodeBlockController2 : UIViewController{
         
         //変更 2024/10/24
         viewController?.videoCapture.stopCapturing()
+        nextViewController?.videoCapture.stopCapturing()
         
         //変更 2024/06/27
         guard let url = currentURL else {
