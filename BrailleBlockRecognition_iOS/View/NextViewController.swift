@@ -11,7 +11,7 @@ import SafariServices
 import CoreLocation
 import CoreMotion
 import AVFoundation//変更箇所
-
+import AudioToolbox
 
 
 class NextViewController: UIViewController,UIGestureRecognizerDelegate,CLLocationManagerDelegate,UITextViewDelegate{
@@ -322,7 +322,11 @@ class NextViewController: UIViewController,UIGestureRecognizerDelegate,CLLocatio
 
             if acceleX > threshold || acceleY > threshold || acceleZ > threshold ||
                acceleX < -threshold || acceleY < -threshold || acceleZ < -threshold {
+                //AudioServicesPlaySystemSound(kSystemSoundID_Vibrate)
+                //AudioServicesPlaySystemSound(1520)
                 print("シェイクを検知しました！")
+                let generator = UIImpactFeedbackGenerator(style: .heavy)
+                generator.impactOccurred()
                 stopmotion()
             }
     }
@@ -404,9 +408,6 @@ extension NextViewController: VideoCaptureDelegate {
 
             
             //データベースのキーと取得したキーを照合し、違ったら、ジャンルボタンを一般に変更
-            print("ガイダンスキーとキー")
-            print(guidanceKey)
-            print(key)
             if guidanceKey != key {
                 setSwitchButtonName()
             }
