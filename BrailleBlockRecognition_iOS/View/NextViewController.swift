@@ -133,8 +133,8 @@ class NextViewController: UIViewController,UIGestureRecognizerDelegate,CLLocatio
         
         //変更 2024/06/19
         codeBlock2.stopAudio()
-        videoCapture.stopCapturing()
-        videoCapture.startCapturing()
+        //videoCapture.stopCapturing()
+        //videoCapture.startCapturing()
         
         //guideText = ""
         //urlMessage = ""
@@ -476,7 +476,7 @@ extension NextViewController: AudioPlayerDelegate {
         guideVoice.process = false
         NotificationCenter.default.removeObserver(self, name: .AVPlayerItemFailedToPlayToEndTime, object: notification.object)
         
-        videoCapture.startCapturing()
+        //videoCapture.startCapturing()
         //加速度センサの読み取り停止
         self.stopAccelerometer()
         

@@ -139,8 +139,8 @@ class ViewController: UIViewController, UIGestureRecognizerDelegate,CLLocationMa
         
         //変更 2024/06/19
         codeBlock2.stopAudio()
-        videoCapture.stopCapturing()
-        videoCapture.startCapturing()
+        //videoCapture.stopCapturing()
+        //videoCapture.startCapturing()
         
         //guideText = ""
         //urlMessage = ""
