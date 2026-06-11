@@ -404,9 +404,6 @@ extension NextViewController: VideoCaptureDelegate {
 
             
             //データベースのキーと取得したキーを照合し、違ったら、ジャンルボタンを一般に変更
-            print("ガイダンスキーとキー")
-            print(guidanceKey)
-            print(key)
             if guidanceKey != key {
                 setSwitchButtonName()
             }

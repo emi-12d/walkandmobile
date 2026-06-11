@@ -61,6 +61,8 @@ class CodeBlockController {
             return URL(string: standard + "_ko")!
         case "zh":
             return URL(string: standard + "_zh")!
+        case "hi":
+            return URL(string: standard + "_hi")!
         default:
             return URL(string: standard)!
         }

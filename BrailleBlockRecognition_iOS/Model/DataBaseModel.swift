@@ -16,7 +16,7 @@ class DataBaseModel {
                 for data in responseAllData {
                     let srcCode = data.value(forKey: "code") as! Int
                     let srcAngle = data.value(forKey: "angle") as! Int
-                    let srcMessage = data.value(forKey: "message") as! String
+                    let srcMessage = data.value(forKey: "message") as? String ?? ""
                     let srcReading = data.value(forKey: "reading") as? String
                     var srcMessagecategory = data.value(forKey: "messagecategory") as! String
                     

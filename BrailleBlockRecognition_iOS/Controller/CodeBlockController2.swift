@@ -167,6 +167,16 @@ class CodeBlockController2 : UIViewController{
                 standard = standard + "_zh/wm" + String(format:"%05d", Code) + "_" + String(Angle)  + "_exclusive.mp3"
             }
             /*standard = standard + "_zh/wm" + String(format:"%05d", Code) + "_" + String(Angle) + "_" + Genre + ".mp3"*/
+        case "hi":
+            if Genre == "0"{
+                standard = standard + "_hi/wm" + String(format:"%05d", Code) + "_" + String(Angle)  + ".mp3"
+            }else if Genre == "1"{
+                standard = standard + "_hi/wm" + String(format:"%05d", Code) + "_" + String(Angle)  + "_detail.mp3"
+            }else if Genre == "2"{
+                standard = standard + "_hi/wm" + String(format:"%05d", Code) + "_" + String(Angle)  + "_evacuation.mp3"
+            }else if Genre == "3"{
+                standard = standard + "_hi/wm" + String(format:"%05d", Code) + "_" + String(Angle)  + "_exclusive.mp3"
+            }
         default:
             if Genre == "0"{
                 standard = standard + "/wm" + String(format:"%05d", Code) + "_" + String(Angle)  + ".mp3"
@@ -223,8 +233,8 @@ class CodeBlockController2 : UIViewController{
                 print("サーバーに音声ファイルが見つかりません。未登録として処理します。")
                 self.guideVoice.echo(manuscript: "未登録です", lang: "ja")
                 
-                //　音声が終わる頃（1.5秒後）に、強制的に完了処理を呼び出してカメラのフリーズを解除
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                //　音声が終わる頃（2秒後）に、強制的に完了処理を呼び出してカメラのフリーズを解除
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
                     self.playerDidFinish(notification: Notification(name: .AVPlayerItemDidPlayToEndTime))
                 }
             }
