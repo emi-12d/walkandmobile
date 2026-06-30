@@ -12,6 +12,8 @@ import CoreLocation
 import CoreMotion
 import AVFoundation//変更箇所
 
+import AudioToolbox
+
 
 
 class NextViewController: UIViewController,UIGestureRecognizerDelegate,CLLocationManagerDelegate,UITextViewDelegate{
@@ -328,6 +330,8 @@ class NextViewController: UIViewController,UIGestureRecognizerDelegate,CLLocatio
             if acceleX > threshold || acceleY > threshold || acceleZ > threshold ||
                acceleX < -threshold || acceleY < -threshold || acceleZ < -threshold {
                 print("シェイクを検知しました！")
+                // 停止時にバイブの追加
+                AudioServicesPlaySystemSound(kSystemSoundID_Vibrate)
                 stopmotion()
             }
     }
