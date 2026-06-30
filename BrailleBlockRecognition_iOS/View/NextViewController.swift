@@ -229,6 +229,8 @@ class NextViewController: UIViewController,UIGestureRecognizerDelegate,CLLocatio
         //保存する
         UserDefaults.standard.set(newRate, forKey: "reproductionSpeed")
         
+        codeBlock2.updatePlaybckSpeed(newRate)
+        
         let displayRate = String(format: "%.1f", newRate)
         let speechText = "速度 \(displayRate)"
         
