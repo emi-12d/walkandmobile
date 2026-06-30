@@ -231,7 +231,11 @@ class CodeBlockController2 : UIViewController{
                     
             if item.status == .failed {
                 print("サーバーに音声ファイルが見つかりません。未登録として処理します。")
-                self.guideVoice.echo(manuscript: "未登録です", lang: "ja")
+                
+                if UIAccessibility.isVoiceOverRunning{
+                    self.guideVoice.echo(manuscript: "もう一度読み取ってください", lang: "ja")
+                }
+
                 
                 //　音声が終わる頃（2秒後）に、強制的に完了処理を呼び出してカメラのフリーズを解除
                 DispatchQueue.main.asyncAfter(deadline: .now() + 2) {

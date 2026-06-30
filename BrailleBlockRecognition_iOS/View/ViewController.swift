@@ -477,11 +477,11 @@ extension ViewController: VideoCaptureDelegate {
             //resultCallsの２番目（type）の値がnilであればUnregisteredが入る
             
             // 登録されていないコードを読み取った時の処理
-            if resultMessage == "" {
-                guideText = "未登録"
-            }
+//            if resultMessage == "" {
+//                guideText = "未登録"
+//            }
             // 案内文にURLが入っている場合、読み方を表示し、読み方をアナウンスする
-            else if resultMessage.prefix(4) == "http"{
+            if resultMessage.prefix(4) == "http"{
                 guideText = resultCall
                 voiceGuidance = resultCall
                 urlMessage = resultMessage
