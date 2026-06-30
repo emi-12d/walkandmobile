@@ -231,21 +231,24 @@ class NextViewController: UIViewController,UIGestureRecognizerDelegate,CLLocatio
         
         codeBlock2.updatePlaybckSpeed(newRate)
         
-        let displayRate = String(format: "%.1f", newRate)
-        let speechText = "速度 \(displayRate)"
-        
-        // AVSpeechUtterance（読み上げる内容）の設定
-        let utterance = AVSpeechUtterance(string: speechText)
-        utterance.voice = AVSpeechSynthesisVoice(language: "ja-JP")
-        
-        // AVSpeechUtteranceのrateは、0.0(遅い)〜1.5(速い)で指定します
-        utterance.rate = newRate
-
-        // 以前の速度アナウンスがまだ流れていれば停止させてから再生
-        if speedSpeechSynthesizer.isSpeaking {
-            speedSpeechSynthesizer.stopSpeaking(at: .immediate)
+        if guideVoice.process == false {
+            
+            let displayRate = String(format: "%.1f", newRate)
+            let speechText = "速度 \(displayRate)"
+            
+            // AVSpeechUtterance（読み上げる内容）の設定
+            let utterance = AVSpeechUtterance(string: speechText)
+            utterance.voice = AVSpeechSynthesisVoice(language: "ja-JP")
+            
+            // AVSpeechUtteranceのrateは、0.0(遅い)〜1.5(速い)で指定します
+            utterance.rate = newRate
+            
+            // 以前の速度アナウンスがまだ流れていれば停止させてから再生
+            if speedSpeechSynthesizer.isSpeaking {
+                speedSpeechSynthesizer.stopSpeaking(at: .immediate)
+            }
+            speedSpeechSynthesizer.speak(utterance)
         }
-        speedSpeechSynthesizer.speak(utterance)
     }
     // VoiceOverオン時に「3本指」で上下スワイプした時に呼ばれます
         override func accessibilityScroll(_ direction: UIAccessibilityScrollDirection) -> Bool {
