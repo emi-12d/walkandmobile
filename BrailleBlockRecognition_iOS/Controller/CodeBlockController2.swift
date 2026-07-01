@@ -243,11 +243,18 @@ class CodeBlockController2 : UIViewController{
                 }
             }
         }
+        // メインスレッドで実行
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return } // selfが存在する場合のみ実行
+            self.playerLayer = AVPlayerLayer(player: self.player)
+            self.playerLayer.frame = self.view.bounds
+            self.view.layer.addSublayer(self.playerLayer)
+        }
         
         self.player = AVPlayer(playerItem: playerItem)
-        self.playerLayer = AVPlayerLayer(player: self.player)
-        playerLayer.frame = view.bounds
-        view.layer.addSublayer(playerLayer)
+//        self.playerLayer = AVPlayerLayer(player: self.player)
+//        playerLayer.frame = view.bounds
+//        view.layer.addSublayer(playerLayer)
         player?.play()
         
         //変更 2024/07/07
@@ -275,8 +282,14 @@ class CodeBlockController2 : UIViewController{
         //変更 2024/06/27
         player?.replaceCurrentItem(with: nil)
         player = nil
-        playerLayer?.removeFromSuperlayer()
-        playerLayer = nil
+        
+        // メインスレッドで実行
+        DispatchQueue.main.async { [weak self] in
+            self?.playerLayer?.removeFromSuperlayer()
+            self?.playerLayer = nil
+        }
+//        playerLayer?.removeFromSuperlayer()
+//        playerLayer = nil
         
         guideVoice.process = false
         

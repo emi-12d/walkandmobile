@@ -331,8 +331,15 @@ class NextViewController: UIViewController,UIGestureRecognizerDelegate,CLLocatio
                acceleX < -threshold || acceleY < -threshold || acceleZ < -threshold {
                 print("シェイクを検知しました！")
                 // 停止時にバイブの追加
-                AudioServicesPlaySystemSound(kSystemSoundID_Vibrate)
-                stopmotion()
+                //AudioServicesPlaySystemSound(kSystemSoundID_Vibrate)
+                
+                // stopmotionをメインスレッドで実行
+                DispatchQueue.main.async { [weak self] in
+                                guard let self = self else { return }
+                    // 停止時のバイブレーションとUI更新処理をメインスレッドで行う
+                    AudioServicesPlaySystemSound(kSystemSoundID_Vibrate)
+                    self.stopmotion()
+                }
             }
     }
     
