@@ -101,6 +101,9 @@ class NextViewController: UIViewController,UIGestureRecognizerDelegate,CLLocatio
         guideVoice.stop()
         codeBlock2.stopAudio()
         
+        videoCapture.stopCapturing()
+        videoCapture.startCapturing()
+        
         guideText = ""
         urlMessage = ""
         
@@ -209,25 +212,25 @@ class NextViewController: UIViewController,UIGestureRecognizerDelegate,CLLocatio
         setDefaultButtonName()
 
     }
-//    // 2本指ダブルタップでヘルプの再生
-//    override func accessibilityPerformMagicTap() -> Bool {
-//        
-//        if guideVoice.process {
-//            // 音声の停止
-//            stopmotion()
-//            // カメラの再生
-//            videoCapture.startCapturing()
-//            // バイブレーション
-//            AudioServicesPlaySystemSound(kSystemSoundID_Vibrate)
-//            return true
-//            
-//        } else {
-//            let helpMessage = "操作説明です。シェイクで音声の停止、三本指の上下スワイプで読み上げ速度を変更できます。"
-//            guideVoice.echo(manuscript: helpMessage, lang: "ja")
-//            
-//            return true
-//        }
-//    }
+    // 2本指ダブルタップでヘルプの再生
+    override func accessibilityPerformMagicTap() -> Bool {
+        
+        if guideVoice.process {
+            // 音声の停止
+            stopmotion()
+            // カメラの再生
+            videoCapture.startCapturing()
+            // バイブレーション
+            AudioServicesPlaySystemSound(kSystemSoundID_Vibrate)
+            return true
+            
+        } else {
+            let helpMessage = "操作説明です。シェイクで音声の停止、三本指の上下スワイプで読み上げ速度を変更できます。"
+            guideVoice.echo(manuscript: helpMessage, lang: "ja")
+            
+            return true
+        }
+    }
     
     @objc func handleSwipe(_ gesture: UISwipeGestureRecognizer) {
         // 速度変更処理を呼び出し
@@ -350,14 +353,19 @@ class NextViewController: UIViewController,UIGestureRecognizerDelegate,CLLocatio
 
             if acceleX > threshold || acceleY > threshold || acceleZ > threshold ||
                acceleX < -threshold || acceleY < -threshold || acceleZ < -threshold {
-                print("シェイクを検知しました！")
-                
-                // stopmotionをメインスレッドで実行
-                DispatchQueue.main.async { [weak self] in
-                                guard let self = self else { return }
-                    // 停止時のバイブレーションとUI更新処理をメインスレッドで行う
-                    AudioServicesPlaySystemSound(kSystemSoundID_Vibrate)
-                    self.stopmotion()
+                if guideVoice.process {
+                    print("シェイクを検知しました！")
+                    
+                    DispatchQueue.main.async { [weak self] in
+                        guard let self = self else { return }
+                        
+                        // 念のためメインスレッド内でもう一度確認（連打防止の要）
+                        if self.guideVoice.process {
+                            // 停止時のバイブレーション
+                            AudioServicesPlaySystemSound(kSystemSoundID_Vibrate)
+                            self.stopmotion()
+                        }
+                    }
                 }
             }
     }
