@@ -207,7 +207,28 @@ class NextViewController: UIViewController,UIGestureRecognizerDelegate,CLLocatio
         guideVoice.delegate = self
         
         setDefaultButtonName()
+
     }
+//    // 2本指ダブルタップでヘルプの再生
+//    override func accessibilityPerformMagicTap() -> Bool {
+//        
+//        if guideVoice.process {
+//            // 音声の停止
+//            stopmotion()
+//            // カメラの再生
+//            videoCapture.startCapturing()
+//            // バイブレーション
+//            AudioServicesPlaySystemSound(kSystemSoundID_Vibrate)
+//            return true
+//            
+//        } else {
+//            let helpMessage = "操作説明です。シェイクで音声の停止、三本指の上下スワイプで読み上げ速度を変更できます。"
+//            guideVoice.echo(manuscript: helpMessage, lang: "ja")
+//            
+//            return true
+//        }
+//    }
+    
     @objc func handleSwipe(_ gesture: UISwipeGestureRecognizer) {
         // 速度変更処理を呼び出し
         if gesture.direction == .up {
@@ -330,8 +351,6 @@ class NextViewController: UIViewController,UIGestureRecognizerDelegate,CLLocatio
             if acceleX > threshold || acceleY > threshold || acceleZ > threshold ||
                acceleX < -threshold || acceleY < -threshold || acceleZ < -threshold {
                 print("シェイクを検知しました！")
-                // 停止時にバイブの追加
-                //AudioServicesPlaySystemSound(kSystemSoundID_Vibrate)
                 
                 // stopmotionをメインスレッドで実行
                 DispatchQueue.main.async { [weak self] in
