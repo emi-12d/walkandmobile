@@ -101,8 +101,8 @@ class NextViewController: UIViewController,UIGestureRecognizerDelegate,CLLocatio
         guideVoice.stop()
         codeBlock2.stopAudio()
         
-        videoCapture.stopCapturing()
-        videoCapture.startCapturing()
+//        videoCapture.stopCapturing()
+//        videoCapture.startCapturing()
         
         guideText = ""
         urlMessage = ""
@@ -138,8 +138,8 @@ class NextViewController: UIViewController,UIGestureRecognizerDelegate,CLLocatio
         
         //変更 2024/06/19
         codeBlock2.stopAudio()
-        videoCapture.stopCapturing()
-        videoCapture.startCapturing()
+//        videoCapture.stopCapturing()
+//        videoCapture.startCapturing()
         
         //guideText = ""
         //urlMessage = ""
@@ -179,6 +179,9 @@ class NextViewController: UIViewController,UIGestureRecognizerDelegate,CLLocatio
         
         //変更 2024/07/28
         self.setupCameraSession()// カメラセッションのセットアップ専用メソッドを呼び出す
+        DispatchQueue.main.async { [weak self] in
+                    self?.videoCapture.startCapturing()
+        }
         
         UIApplication.shared.isIdleTimerDisabled = true
     }
@@ -194,15 +197,15 @@ class NextViewController: UIViewController,UIGestureRecognizerDelegate,CLLocatio
 
         //サーバーからデータ取得
         codeBlock.fetchGuideInformation{
-            self.videoCapture.startCapturing()
+            //self.videoCapture.startCapturing()
         }
         //省電力モードによるカメラの起動の処理
         
-        //変更 2024/07/28
-        DispatchQueue.main.async {
-            self.videoCapture.startCapturing()
-        }
-        
+//        //変更 2024/07/28
+//        DispatchQueue.main.async {
+//            self.videoCapture.startCapturing()
+//        }
+//        
         videoCapture.delegate = self
         //インスタンスアクセス許可
         codeBlock2.nextViewController = self
@@ -219,7 +222,7 @@ class NextViewController: UIViewController,UIGestureRecognizerDelegate,CLLocatio
             // 音声の停止
             stopmotion()
             // カメラの再生
-            videoCapture.startCapturing()
+            //videoCapture.startCapturing()
             // バイブレーション
             AudioServicesPlaySystemSound(kSystemSoundID_Vibrate)
             return true
@@ -399,7 +402,9 @@ class NextViewController: UIViewController,UIGestureRecognizerDelegate,CLLocatio
     //画面から移動した時に呼ばれる
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
-        videoCapture.stopCapturing()
+        DispatchQueue.main.async { [weak self] in
+                    self?.videoCapture.stopCapturing()
+                }
         stopAccelerometer() // 追加
     }
     
@@ -408,6 +413,7 @@ class NextViewController: UIViewController,UIGestureRecognizerDelegate,CLLocatio
     private func setupCameraSession() {
         videoCapture.setupSession()  // カメラ設定を行うメソッド。VideoCaptureModel内に定義が必要。
     }
+    
     
 }
 
@@ -519,7 +525,7 @@ extension NextViewController: AudioPlayerDelegate {
         guideVoice.process = false
         NotificationCenter.default.removeObserver(self, name: .AVPlayerItemFailedToPlayToEndTime, object: notification.object)
         
-        videoCapture.startCapturing()
+        //videoCapture.startCapturing()
         //加速度センサの読み取り停止
         self.stopAccelerometer()
         
@@ -532,7 +538,7 @@ extension NextViewController: AudioPlayerDelegate {
         
         //URLの処理
         if urlMessage != ""{
-            videoCapture.stopCapturing()
+            //videoCapture.stopCapturing()
             guard let webView = safariVC else { return }
             webView.delegate = self
             present(webView, animated: false, completion: nil)
@@ -564,7 +570,7 @@ extension NextViewController: AudioPlayerDelegate {
     // 文字を読み終えたら呼び出される
      func didFinishReading() {
         print("playerDidFinishPlaying")
-        videoCapture.startCapturing()
+        //videoCapture.startCapturing()
         //加速度センサの読み取り停止
         self.stopAccelerometer()
         
@@ -577,7 +583,7 @@ extension NextViewController: AudioPlayerDelegate {
         
         //URLの処理
         if urlMessage != ""{
-            videoCapture.stopCapturing()
+            //videoCapture.stopCapturing()
             guard let webView = safariVC else { return }
             webView.delegate = self
             present(webView, animated: false, completion: nil)

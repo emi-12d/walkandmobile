@@ -217,7 +217,7 @@ class CodeBlockController2 : UIViewController{
         
         //変更 2024/10/24
         viewController?.videoCapture.stopCapturing()
-        nextViewController?.videoCapture.stopCapturing()
+        //nextViewController?.videoCapture.stopCapturing()
         
         //変更 2024/06/27
         guard let url = currentURL else {
