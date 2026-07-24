@@ -199,9 +199,9 @@ class NextViewController: UIViewController,UIGestureRecognizerDelegate,CLLocatio
         //省電力モードによるカメラの起動の処理
         
         //変更 2024/07/28
-        DispatchQueue.main.async {
-            self.videoCapture.startCapturing()
-        }
+//        DispatchQueue.main.async {
+//            self.videoCapture.startCapturing()
+//        }
         
         videoCapture.delegate = self
         //インスタンスアクセス許可
@@ -409,6 +409,45 @@ class NextViewController: UIViewController,UIGestureRecognizerDelegate,CLLocatio
         videoCapture.setupSession()  // カメラ設定を行うメソッド。VideoCaptureModel内に定義が必要。
     }
     
+    // URL遷移前の確認アラート
+    private func showURLConfirmation() {
+        guard let webView = safariVC else { return }
+        webView.delegate = self
+        
+        // 遷移前にカメラを一旦停止
+        videoCapture.stopCapturing()
+        
+        // VoiceOverが読み上げるアラートを作成
+        let alert = UIAlertController(
+            title: NSLocalizedString("確認", comment: ""),
+            message: NSLocalizedString("ウェブサイトを開きますか？", comment: ""),
+            preferredStyle: .alert
+        )
+        
+        // 「キャンセル」を選んだ場合の処理
+        let cancelAction = UIAlertAction(title: NSLocalizedString("キャンセル", comment: ""), style: .cancel) { [weak self] _ in
+            self?.urlMessage = ""
+            self?.safariVC = nil
+            // 読み取りを再開
+            self?.videoCapture.startCapturing()
+        }
+        
+        // 「開く」を選んだ場合の処理
+        let openAction = UIAlertAction(title: NSLocalizedString("開く", comment: ""), style: .default) { [weak self] _ in
+            // Safariを開く
+            self?.present(webView, animated: false, completion: nil)
+            self?.urlMessage = ""
+        }
+        
+        alert.addAction(cancelAction)
+        alert.addAction(openAction)
+        
+        // メインスレッドでアラートを表示
+        DispatchQueue.main.async {
+            self.present(alert, animated: true, completion: nil)
+        }
+    }
+    
 }
 
 extension NextViewController: VideoCaptureDelegate {
@@ -452,6 +491,9 @@ extension NextViewController: VideoCaptureDelegate {
             }
             
             
+            let resultMessage = resultMessages.1 ?? NSLocalizedString("Unregistered", comment: "")
+            
+            
             if guideVoice.process { return }
             guideVoice.process = true
             
@@ -463,7 +505,22 @@ extension NextViewController: VideoCaptureDelegate {
             // 読み方を取得
             codeBlock2.checkDeviceLocation(Code: code, Angle: angle, Genre: genre)
             //resultCallsの２番目（type）の値がnilであればUnregisteredが入る
-        
+
+            
+            // 案内文が "http" から始まるか（URLか）を判定
+            if resultMessage.prefix(4) == "http" {
+
+                
+                voiceGuidance = resultCall
+                urlMessage = resultMessage
+                
+                // ※VoiceOver ON時は画面に文字を出さないため、guideTextへの代入は不要です
+                
+            } else if resultCall == "" {
+                voiceGuidance = resultMessage
+            } else {
+                voiceGuidance = resultCall
+            }
             // 案内文にURLが入っている場合、読み方を表示し、読み方をアナウンスする
             /*if resultMessage.prefix(4) == "http"{
                 guideText = resultCall
@@ -532,12 +589,13 @@ extension NextViewController: AudioPlayerDelegate {
         
         //URLの処理
         if urlMessage != ""{
-            videoCapture.stopCapturing()
-            guard let webView = safariVC else { return }
-            webView.delegate = self
-            present(webView, animated: false, completion: nil)
-            urlMessage = ""
-          
+//            videoCapture.stopCapturing()
+//            guard let webView = safariVC else { return }
+//            webView.delegate = self
+//            present(webView, animated: false, completion: nil)
+//            urlMessage = ""
+//
+            showURLConfirmation()
         }
     }
     
@@ -556,9 +614,10 @@ extension NextViewController: AudioPlayerDelegate {
                 )
             }
        
-        guard let webView = safariVC else { return }
-        webView.delegate = self
-        present(webView,animated: false,completion: nil)
+//        guard let webView = safariVC else { return }
+//        webView.delegate = self
+//        present(webView,animated: false,completion: nil)
+        showURLConfirmation()
     }
     
     // 文字を読み終えたら呼び出される
@@ -577,11 +636,12 @@ extension NextViewController: AudioPlayerDelegate {
         
         //URLの処理
         if urlMessage != ""{
-            videoCapture.stopCapturing()
-            guard let webView = safariVC else { return }
-            webView.delegate = self
-            present(webView, animated: false, completion: nil)
-            urlMessage = ""
+//            videoCapture.stopCapturing()
+//            guard let webView = safariVC else { return }
+//            webView.delegate = self
+//            present(webView, animated: false, completion: nil)
+//            urlMessage = ""
+            showURLConfirmation()
           
         }
     }
