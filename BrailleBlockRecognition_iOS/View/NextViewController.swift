@@ -409,6 +409,45 @@ class NextViewController: UIViewController,UIGestureRecognizerDelegate,CLLocatio
         videoCapture.setupSession()  // カメラ設定を行うメソッド。VideoCaptureModel内に定義が必要。
     }
     
+    // 追加: URL遷移の処理をまとめたメソッド (VoiceOver専用画面用)
+    private func handleURLTransition() {
+        guard let webView = safariVC else { return }
+        webView.delegate = self
+        
+        // 遷移前にカメラを一旦停止
+        videoCapture.stopCapturing()
+        
+        // 確認ダイアログを作成
+        let alert = UIAlertController(
+            title: NSLocalizedString("確認", comment: ""),
+            message: NSLocalizedString("ウェブサイトを開きますか？", comment: ""),
+            preferredStyle: .alert
+        )
+        
+        // 「キャンセル」ボタンのアクション
+        let cancelAction = UIAlertAction(title: NSLocalizedString("キャンセル", comment: ""), style: .cancel) { [weak self] _ in
+            // キャンセルした場合は変数をリセットし、カメラを再開して読み取り待ちに戻る
+            self?.urlMessage = ""
+            self?.safariVC = nil
+            self?.videoCapture.startCapturing()
+        }
+        
+        // 「開く」ボタンのアクション
+        let openAction = UIAlertAction(title: NSLocalizedString("開く", comment: ""), style: .default) { [weak self] _ in
+            // 開くを選択した場合のみSafariを開く
+            self?.present(webView, animated: false, completion: nil)
+            self?.urlMessage = ""
+        }
+        
+        alert.addAction(cancelAction)
+        alert.addAction(openAction)
+        
+        // メインスレッドでアラートを表示
+        DispatchQueue.main.async {
+            self.present(alert, animated: true, completion: nil)
+        }
+    }
+    
 }
 
 extension NextViewController: VideoCaptureDelegate {
@@ -531,13 +570,8 @@ extension NextViewController: AudioPlayerDelegate {
         //videoCapture.startCapturing()
         
         //URLの処理
-        if urlMessage != ""{
-            videoCapture.stopCapturing()
-            guard let webView = safariVC else { return }
-            webView.delegate = self
-            present(webView, animated: false, completion: nil)
-            urlMessage = ""
-          
+        if urlMessage != "" {
+                    handleURLTransition()
         }
     }
     
@@ -555,6 +589,9 @@ extension NextViewController: AudioPlayerDelegate {
                     }
                 )
             }
+        if safariVC != nil {
+                    handleURLTransition()
+        }
        
         guard let webView = safariVC else { return }
         webView.delegate = self
@@ -576,13 +613,8 @@ extension NextViewController: AudioPlayerDelegate {
         //videoCapture.startCapturing()
         
         //URLの処理
-        if urlMessage != ""{
-            videoCapture.stopCapturing()
-            guard let webView = safariVC else { return }
-            webView.delegate = self
-            present(webView, animated: false, completion: nil)
-            urlMessage = ""
-          
+         if urlMessage != "" {
+                     handleURLTransition()
         }
     }
 }
