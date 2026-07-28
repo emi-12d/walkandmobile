@@ -7,7 +7,7 @@
 #import <opencv2/imgcodecs/ios.h>
 
 #import "OpenCV.h" //ライブラリによってはNOマクロがバッティングするので，これは最後にimport
-
+#include <opencv2/core/version.hpp>
 
 
 #include <string>
@@ -84,27 +84,27 @@ cv::Mat cvMatC3(cv::Mat cvMat){
     int sqaindex = 0;
 
     vector<vector<cv::Point> > tr;// 三角形　エリア 座標 個数オーバーか？　２０－－－＞４０へ 原因不明エラーでストップ　9/14
-    tr.resize(20);
+    //tr.resize(20);
     tr.clear();
     vector<vector<cv::Point> > trw;//白三角用　追加2023-10-7
-    trw.resize(20);
+    //trw.resize(20);
     trw.clear();
 
     vector<vector<cv::Point> > Tr;// 三角形　エリア 座標 // = vector<Point> tr[10];
-    Tr.resize(20);
+    //Tr.resize(20);
     Tr.clear();
     vector<vector<cv::Point> > Trw;// 三角形　エリア 座標 // = vector<Point> tr[10];
-    Trw.resize(20);
+    //Trw.resize(20);
     Trw.clear();
 
     vector<vector<cv::Point> > Sq;// ４角形　エリア 座標 Canny
-    Sq.resize(20);
+    //Sq.resize(20);
     Sq.clear();
     vector<vector<cv::Point> > Sqa;// ４角形　エリア 座標 Adaptive
-    Sqa.resize(20);
+    //Sqa.resize(20);
     Sqa.clear();
     vector<vector<cv::Point> > sq;// ４角形　エリア 座標 duplicate check
-    sq.resize(40);
+    //sq.resize(40);
     sq.clear();
 
     ///////////////////ここまで/////////////////////////////////////////////////////
@@ -142,46 +142,46 @@ cv::Mat cvMatC3(cv::Mat cvMat){
         //if (ret0==0) continue;
     }
     /////////////////////////////////
-    Code=0;
-    Angl=-1;
+    /////////////////////////////////
+        Code = 0;
+        Angl = -1;
 
-    int ret=-1;
-    int retw=-1;
-    int TrBW=-1;
+        int ret = -1;
+        int retw = -1;
 
-    if (tindex != 0){//黒3角
-        trindex = Trcheck(Tr, tindex, tr);// ダブりチェックa
-        TrBW=0;// Black TR
-        ret = FHomo(image, sq, sqindex, tr, trindex, TrBW);
-    }
-    if (twindex != 0){// 白3角
-          trwindex = Trcheck(Trw,twindex,trw);// ダブりチェックa
-          TrBW=1;// White TR
-            retw = FHomo(image, sq, sqindex, trw, trwindex, TrBW);
-    }
-    ///////////////////////////////////////////////////
-    if (ret == 0) // 1個のみ 例外
-    {
-        /* //////////右上黒　平面ブロックコードは一個だけでもOK 2020-12-15
-        if  ((Code >= 1048576)&&(Code <= 2097152))// 更新　2022-2-8
-            ret=1;
-        *//////////////
-        ///////////右上1,3黒　平面ブロックコードは一個だけでもOK 2023-6-12
-        if  ((Code >= 5242880)&&(Code < 6291456))
-            ret=1;
-    }
-    if (retw == 0) // 1個のみ 例外
-    {
-        if  ((Code >= 5242880)&&(Code < 6291456))
-            retw=1;
-    }
+        // 1. まず黒三角（TrBW = 0）をチェックする
+        if (tindex != 0){
+            trindex = Trcheck(Tr, tindex, tr);
+            ret = FHomo(image, sq, sqindex, tr, trindex, 0);
+            
+            if (ret == 0) { // 1個のみ 例外処理
+                if ((Code >= 5242880) && (Code < 6291456)) {
+                    ret = 1;
+                }
+            }
+        }
 
-    if ((ret<=0)||(retw<=0)){
-      Code=0;
-      Angl=-1;
-    }
+        // 2. 黒三角でコードが取れなかった場合のみ、白三角（TrBW = 1）をチェックする
+        // （無駄な処理を省き、グローバル変数Codeの上書きを防ぐ）
+        if (ret < 0 && twindex != 0){
+            trwindex = Trcheck(Trw, twindex, trw);
+            retw = FHomo(image, sq, sqindex, trw, trwindex, 1);
+            
+            if (retw == 0) { // 1個のみ 例外処理
+                if ((Code >= 5242880) && (Code < 6291456)) {
+                    retw = 1;
+                }
+            }
+        }
 
-    cv::cvtColor(image, image0, COLOR_BGR2RGBA);
+        // 3. 黒三角でも白三角でも有効なコードが取れなかった場合のみ、結果をリセット
+        if (ret < 0 && retw < 0){
+            Code = 0;
+            Angl = -1;
+        }
+
+        cv::cvtColor(image, image0, COLOR_BGR2RGBA);
+        /////////////////////////////////////////////
     /////////////////////////////////////////////
 
 //    Ret[0]=ret;
@@ -998,19 +998,26 @@ static int findTr( const Mat& image, const Mat& imageW, vector<vector<cv::Point>
                             //printf("Canny-TR BWcheck B=%d W=%d \n",b,w);
 
                       if (b<w) //continue;
-                      {   trw[tw].push_back(cv::Point(approx[0].x, approx[0].y));
-                          trw[tw].push_back(cv::Point(approx[1].x, approx[1].y));
-                          trw[tw].push_back(cv::Point(approx[2].x, approx[2].y));
+                      {
+                          std::vector<cv::Point> new_triangle = approx;
+                          trw.push_back(new_triangle);
+                          tw = (int)trw.size();
+//                          trw[tw].push_back(cv::Point(approx[0].x, approx[0].y));
+//                          trw[tw].push_back(cv::Point(approx[1].x, approx[1].y));
+//                          trw[tw].push_back(cv::Point(approx[2].x, approx[2].y));
                 //polylines(imageW, trw[tw], true, Scalar(0, 0, 255), 2);//赤
-                          tw++;
+                          //tw++;
                       }
                       else
                       {
-                          tr[t].push_back(cv::Point(approx[0].x, approx[0].y));
-                          tr[t].push_back(cv::Point(approx[1].x, approx[1].y));
-                          tr[t].push_back(cv::Point(approx[2].x, approx[2].y));
+                          std::vector<cv::Point> new_triangle = approx;
+                          tr.push_back(new_triangle);
+                          t = (int)tr.size();
+//                          tr[t].push_back(cv::Point(approx[0].x, approx[0].y));
+//                          tr[t].push_back(cv::Point(approx[1].x, approx[1].y));
+//                          tr[t].push_back(cv::Point(approx[2].x, approx[2].y));
               //  polylines(image, tr[t], true, Scalar(255, 0, 0), 2);//青
-                          t++;
+                          //t++;
                       }
 
                     }
@@ -1056,11 +1063,14 @@ static int findTr( const Mat& image, const Mat& imageW, vector<vector<cv::Point>
                           //printf( " TrBW B=%d W=%d \n", b,w);
                             if (b<w) continue;
                     // Three corners of source image is saved to tr[]
-                        tr[t].push_back(cv::Point(approx[0].x, approx[0].y));
-                        tr[t].push_back(cv::Point(approx[1].x, approx[1].y));
-                        tr[t].push_back(cv::Point(approx[2].x, approx[2].y));
+                      std::vector<cv::Point> new_triangle = approx;
+                      tr.push_back(new_triangle);
+                      t = (int)tr.size();
+//                        tr[t].push_back(cv::Point(approx[0].x, approx[0].y));
+//                        tr[t].push_back(cv::Point(approx[1].x, approx[1].y));
+//                        tr[t].push_back(cv::Point(approx[2].x, approx[2].y));
                     //polylines(image, tr[t], true, Scalar(255, 0,255), 2);// pink
-                        t++;
+                        //t++;
                       }
                     }
                   }
@@ -1101,11 +1111,14 @@ static int findTr( const Mat& image, const Mat& imageW, vector<vector<cv::Point>
                         //printf( " TrBW B=%d W=%d \n", b,w);
                           if (b<w) continue;
                   // Three corners of source image is saved to tr[]
-                      tr[t].push_back(cv::Point(approx[0].x, approx[0].y));
-                      tr[t].push_back(cv::Point(approx[1].x, approx[1].y));
-                      tr[t].push_back(cv::Point(approx[2].x, approx[2].y));
+                    std::vector<cv::Point> new_triangle = approx;
+                    tr.push_back(new_triangle);
+                    t = (int)tr.size();
+//                      tr[t].push_back(cv::Point(approx[0].x, approx[0].y));
+//                      tr[t].push_back(cv::Point(approx[1].x, approx[1].y));
+//                      tr[t].push_back(cv::Point(approx[2].x, approx[2].y));
                   //polylines(image, tr[t], true, Scalar(255, 0,255), 2);// pink
-                      t++;
+                      //t++;
                     }
                   }
                 }
@@ -1154,11 +1167,14 @@ static int findTr( const Mat& image, const Mat& imageW, vector<vector<cv::Point>
                         ////////////////////////////////////////
                         ////////////////////////////////////////
                   // Three corners of source image is saved to tr[]
-                      trw[tw].push_back(cv::Point(approx[0].x, approx[0].y));
-                      trw[tw].push_back(cv::Point(approx[1].x, approx[1].y));
-                      trw[tw].push_back(cv::Point(approx[2].x, approx[2].y));
+                      std::vector<cv::Point> new_triangle = approx;
+                      trw.push_back(new_triangle);
+                      tw = (int)trw.size();
+//                      trw[tw].push_back(cv::Point(approx[0].x, approx[0].y));
+//                      trw[tw].push_back(cv::Point(approx[1].x, approx[1].y));
+//                      trw[tw].push_back(cv::Point(approx[2].x, approx[2].y));
                   //polylines(imageW, trw[tw], true, Scalar(0, 255,255), 2);//黄色
-                      tw++;
+                      //tw++;
                     }
                   }
               }
@@ -2104,7 +2120,8 @@ static int sfindTr( const Mat& img , int TrBW, int TX[3] , int TY[3], int &RDLU)
     Mat mt,mtc,mt0,mt1;
     Mat gray,gray0,grayw;
     //Mat grayw(image.size(), CV_8U);
-    long ll[3];
+    //long ll[3];
+    std::vector<long> ll(3);
     int ij;
     int tx[3],ty[3];
     int ttx[3],tty[3];
@@ -2169,81 +2186,83 @@ static int sfindTr( const Mat& img , int TrBW, int TX[3] , int TY[3], int &RDLU)
                   if (tt<3) continue;//次の三角へ
                   t++;// これは？？？？？不要？  2025－6－23再導入
 
-                  ij = minl_return3(ll);
+                  ij = minl_return3(ll.data());
                     // printf( "ij=%d\n", ij );
 /////////////////////////////////////////////////追加2023－8－8//////////
-                  for ( int i=0; i<3; i++){ // ３角形の頂点座標
-                      tx[i]=(int)approx[i].x;
-                      ty[i]=(int)approx[i].y;
-                  }
-
-          //////////三角座標　並べ替え　右か左か不明なので　右回りにする 4角形の頂点に最も近い三角点　pt[0].x pt[0].y ttx[0],tty[0]を基準にして右周り///////
-                  B=0;//外積での＋－判断　B＜０なら左回り
-                            for (int i=0;i<3;i++)
-                            { Ba[i]=tx[i]*ty[(i+1)%3] - tx[(i+1)%3]*ty[i];
-                              B = B+Ba[i];
-                            }
-                            //printf("B=%f",B);
-                            if (B<0)
-                            {
-                              pt[0].x=tx[ij];
-                              pt[0].y=ty[ij];
-                              pt[1].x=tx[(ij+2)%3];
-                              pt[1].y=ty[(ij+2)%3];
-                              pt[2].x=tx[(ij+1)%3];
-                              pt[2].y=ty[(ij+1)%3];
-                              TX[0]=tx[ij];
-                              TY[0]=ty[ij];
-                              TX[1]=tx[(ij+2)%3];
-                              TY[1]=ty[(ij+2)%3];
-                              TX[2]=tx[(ij+1)%3];
-                              TY[2]=ty[(ij+1)%3];
-
-                            }
-                            else{
-                              pt[0].x=tx[ij];
-                              pt[0].y=ty[ij];
-                              pt[1].x=tx[(ij+1)%3];
-                              pt[1].y=ty[(ij+1)%3];
-                              pt[2].x=tx[(ij+2)%3];
-                              pt[2].y=ty[(ij+2)%3];
-                              TX[0]=tx[ij];
-                              TY[0]=ty[ij];
-                              TX[1]=tx[(ij+1)%3];
-                              TY[1]=ty[(ij+1)%3];
-                              TX[2]=tx[(ij+2)%3];
-                              TY[2]=ty[(ij+2)%3];
-                            }
-          //printf(" Canny-TR TX0 TY0 =%d %d  TX1 TY1= %d %d TX2 TY2= %d %d\n",TX[0],TY[0],TX[1],TY[1],TX[2],TY[2]);
-                    //////
-/////////////////////////////上記　三角の最も大きい角度の点を探す　これが直角点
-                    double cosine[3];
-                    double cosine0[3];
-                    for( int j = 0; j < 3; j++ ){
-                      //cosine[j] = fabs(a_angle( approx0[(j+1)%3], approx0[(j+2)%3],approx[j] ));
-                      //cosine0[j] = a_angle( pt[(j+1)%3], pt[(j+2)%3],pt[j] );
-                      cosine[j] = fabs(a_angle( pt[(j+1)%3], pt[(j+2)%3],pt[j] ));
-                      //printf("cos=%lf \n",cosine[j]);
+                    if (ij >= 0 && ij < approx.size()) {
+                    for ( int i=0; i<3; i++){ // ３角形の頂点座標
+                        tx[i]=(int)approx[i].x;
+                        ty[i]=(int)approx[i].y;
                     }
-                    int tmin=mintd_return(cosine);//最も大きい角度の点　これだけでは判断出来ない
-                    int tmax=maxtd_return(cosine);// 最も小さい角度の点
-                    //printf( " tmin=%d tmax=%d \n", tmin,tmax );
-
-                //この部分以下修正必要　　RDLU の判断　2025/06/23以降検討　新しい三角LEFT
-                    if(tmin==0) RDLU=0;//3角形向き　Right
-                    if(tmax==2) RDLU=1;//Down
-
-                    if((tmax==0)&&(tmin==2)){
-                       if ((TY[0] < TY[1]) && (TY[0] < TY[2])) RDLU=3;//UP
-                       else RDLU=2;//Left
-                    }
-                    ////////  if((tmax==0)&&(tmin==2)) RDLU=2;//Left UP  これでは同じなので
-                    /////////////////////////////////////////////////////////////////////
-                    //printf( " Ca-RDLU=%d  \n", RDLU );
-                    if ((RDLU >= 0)&&(RDLU <= 3)) return 1;
-                    if(RDLU<0) continue;
-          /////////////////////////////////////////////////////////////////////////////////
-            }
+                    
+                        //////////三角座標　並べ替え　右か左か不明なので　右回りにする 4角形の頂点に最も近い三角点　pt[0].x pt[0].y ttx[0],tty[0]を基準にして右周り///////
+                        B=0;//外積での＋－判断　B＜０なら左回り
+                        for (int i=0;i<3;i++)
+                        { Ba[i]=tx[i]*ty[(i+1)%3] - tx[(i+1)%3]*ty[i];
+                            B = B+Ba[i];
+                        }
+                        //printf("B=%f",B);
+                        if (B<0)
+                        {
+                            pt[0].x=tx[ij];
+                            pt[0].y=ty[ij];
+                            pt[1].x=tx[(ij+2)%3];
+                            pt[1].y=ty[(ij+2)%3];
+                            pt[2].x=tx[(ij+1)%3];
+                            pt[2].y=ty[(ij+1)%3];
+                            TX[0]=tx[ij];
+                            TY[0]=ty[ij];
+                            TX[1]=tx[(ij+2)%3];
+                            TY[1]=ty[(ij+2)%3];
+                            TX[2]=tx[(ij+1)%3];
+                            TY[2]=ty[(ij+1)%3];
+                            
+                        }
+                        else{
+                            pt[0].x=tx[ij];
+                            pt[0].y=ty[ij];
+                            pt[1].x=tx[(ij+1)%3];
+                            pt[1].y=ty[(ij+1)%3];
+                            pt[2].x=tx[(ij+2)%3];
+                            pt[2].y=ty[(ij+2)%3];
+                            TX[0]=tx[ij];
+                            TY[0]=ty[ij];
+                            TX[1]=tx[(ij+1)%3];
+                            TY[1]=ty[(ij+1)%3];
+                            TX[2]=tx[(ij+2)%3];
+                            TY[2]=ty[(ij+2)%3];
+                        }
+                        //printf(" Canny-TR TX0 TY0 =%d %d  TX1 TY1= %d %d TX2 TY2= %d %d\n",TX[0],TY[0],TX[1],TY[1],TX[2],TY[2]);
+                        //////
+                        /////////////////////////////上記　三角の最も大きい角度の点を探す　これが直角点
+                        double cosine[3];
+                        double cosine0[3];
+                        for( int j = 0; j < 3; j++ ){
+                            //cosine[j] = fabs(a_angle( approx0[(j+1)%3], approx0[(j+2)%3],approx[j] ));
+                            //cosine0[j] = a_angle( pt[(j+1)%3], pt[(j+2)%3],pt[j] );
+                            cosine[j] = fabs(a_angle( pt[(j+1)%3], pt[(j+2)%3],pt[j] ));
+                            //printf("cos=%lf \n",cosine[j]);
+                        }
+                        int tmin=mintd_return(cosine);//最も大きい角度の点　これだけでは判断出来ない
+                        int tmax=maxtd_return(cosine);// 最も小さい角度の点
+                        //printf( " tmin=%d tmax=%d \n", tmin,tmax );
+                        
+                        //この部分以下修正必要　　RDLU の判断　2025/06/23以降検討　新しい三角LEFT
+                        if(tmin==0) RDLU=0;//3角形向き　Right
+                        if(tmax==2) RDLU=1;//Down
+                        
+                        if((tmax==0)&&(tmin==2)){
+                            if ((TY[0] < TY[1]) && (TY[0] < TY[2])) RDLU=3;//UP
+                            else RDLU=2;//Left
+                        }
+                        ////////  if((tmax==0)&&(tmin==2)) RDLU=2;//Left UP  これでは同じなので
+                        /////////////////////////////////////////////////////////////////////
+                        //printf( " Ca-RDLU=%d  \n", RDLU );
+                        if ((RDLU >= 0)&&(RDLU <= 3)) return 1;
+                        if(RDLU<0) continue;
+                        /////////////////////////////////////////////////////////////////////////////////
+                }
+                }
           }
       }//Canny
 
