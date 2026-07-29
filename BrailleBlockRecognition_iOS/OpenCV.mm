@@ -143,39 +143,53 @@ cv::Mat cvMatC3(cv::Mat cvMat){
     }
     /////////////////////////////////
     /////////////////////////////////
-        Code = 0;
-        Angl = -1;
+        Code=0;
+        Angl=-1;
 
-        int ret = -1;
-        int retw = -1;
+        int ret=-1;
+        int retw=-1;
+        int TrBW=-1;
 
         // 1. まず黒三角（TrBW = 0）をチェックする
         if (tindex != 0){
-            trindex = Trcheck(Tr, tindex, tr);
-            ret = FHomo(image, sq, sqindex, tr, trindex, 0);
-            
-            if (ret == 0) { // 1個のみ 例外処理
-                if ((Code >= 5242880) && (Code < 6291456)) {
-                    ret = 1;
+            trindex = Trcheck(Tr, tindex, tr);// ダブりチェックa
+            TrBW=0;// Black TR
+            ret = FHomo(image, sq, sqindex, tr, trindex, TrBW);
+
+            if (ret == 0) { // 1個のみ取得できた場合
+                // 旧コードに合わせて <= に修正
+                if ((Code >= 5242880) && (Code <= 6291456)) {
+                    ret = 1; // 成功とみなす
+                } else {
+                    // 【重要】範囲外のコード（ノイズ）だった場合はエラーとしてリセット
+                    ret = -1;
+                    Code = 0;
+                    Angl = -1;
                 }
             }
         }
 
-        // 2. 黒三角でコードが取れなかった場合のみ、白三角（TrBW = 1）をチェックする
-        // （無駄な処理を省き、グローバル変数Codeの上書きを防ぐ）
+        // 2. 黒三角で有効なコードが取れなかった場合のみ、白三角（TrBW = 1）をチェックする
         if (ret < 0 && twindex != 0){
-            trwindex = Trcheck(Trw, twindex, trw);
-            retw = FHomo(image, sq, sqindex, trw, trwindex, 1);
-            
-            if (retw == 0) { // 1個のみ 例外処理
-                if ((Code >= 5242880) && (Code < 6291456)) {
-                    retw = 1;
+            trwindex = Trcheck(Trw, twindex, trw);// ダブりチェックa
+            TrBW=1;// White TR
+            retw = FHomo(image, sq, sqindex, trw, trwindex, TrBW);
+
+            if (retw == 0) { // 1個のみ取得できた場合
+                // 旧コードに合わせて <= に修正
+                if ((Code >= 5242880) && (Code <= 6291456)) {
+                    retw = 1; // 成功とみなす
+                } else {
+                    // 範囲外のコードだった場合はエラーとしてリセット
+                    retw = -1;
+                    Code = 0;
+                    Angl = -1;
                 }
             }
         }
 
-        // 3. 黒三角でも白三角でも有効なコードが取れなかった場合のみ、結果をリセット
-        if (ret < 0 && retw < 0){
+        // 3. 黒でも白でも成功（ret == 1 または retw == 1）しなかった場合、結果を完全にリセット
+        if (ret != 1 && retw != 1){
             Code = 0;
             Angl = -1;
         }
@@ -2190,10 +2204,10 @@ static int sfindTr( const Mat& img , int TrBW, int TX[3] , int TY[3], int &RDLU)
                     // printf( "ij=%d\n", ij );
 /////////////////////////////////////////////////追加2023－8－8//////////
                     if (ij >= 0 && ij < approx.size()) {
-                    for ( int i=0; i<3; i++){ // ３角形の頂点座標
-                        tx[i]=(int)approx[i].x;
-                        ty[i]=(int)approx[i].y;
-                    }
+                        for ( int i=0; i<3; i++){ // ３角形の頂点座標
+                            tx[i]=(int)approx[i].x;
+                            ty[i]=(int)approx[i].y;
+                        }
                     
                         //////////三角座標　並べ替え　右か左か不明なので　右回りにする 4角形の頂点に最も近い三角点　pt[0].x pt[0].y ttx[0],tty[0]を基準にして右周り///////
                         B=0;//外積での＋－判断　B＜０なら左回り
