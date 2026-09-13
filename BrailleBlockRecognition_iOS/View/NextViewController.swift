@@ -103,27 +103,6 @@ class NextViewController: UIViewController,UIGestureRecognizerDelegate,CLLocatio
         urlMessage = ""
         
         genres.setTitle(NSLocalizedString(genreName, comment: ""), for: .normal)
-        //cameraImageView.layer.borderColor = UIColor.clear.cgColor
-        
-        if tapCount == 1 {
-            genre = "0"
-            genres.setTitle(NSLocalizedString("normal", comment: ""), for: .normal)
-            genreName = NSLocalizedString("normal", comment: "")
-        } else if tapCount == 2 {
-            genre = "1"
-            genres.setTitle(NSLocalizedString("detail", comment: ""), for: .normal)
-            genreName = NSLocalizedString("detail", comment: "")
-        } else if tapCount == 3 {
-            genre = "2"
-            genres.setTitle(NSLocalizedString("evacuation", comment: ""), for: .normal)
-            genreName = NSLocalizedString("evacuation", comment: "")
-        } else if tapCount == 0 {
-            genre = "3"
-            genres.setTitle(NSLocalizedString("exclusive", comment: ""), for: .normal)
-            genreName = NSLocalizedString("exclusive", comment: "")
-        }
-        genreName = genres.currentTitle ?? "error"
-
         // 音声が止まったらセンサも止める（無駄な動作防止）
         stopAccelerometer()
     }
@@ -258,21 +237,6 @@ class NextViewController: UIViewController,UIGestureRecognizerDelegate,CLLocatio
     }
     //周辺の避難所情報取得機能　↑
     
-    //文字の大きさ設定
-//    func setFontsize() {
-//        fontsize = UserDefaults.standard.string(forKey: "fontsize") ?? "nil"
-//        print(fontsize)
-//        if fontsize == "Small"{
-//            guidance.font = UIFont.systemFont(ofSize: 15)
-//        }
-//        else if fontsize == "Large"{
-//            guidance.font = UIFont.systemFont(ofSize: 25)
-//        }
-//        else{
-//            guidance.font = UIFont.systemFont(ofSize: 20)
-//        }
-//    }
-    
     func lowpassFilter(acceleration: CMAcceleration){
         acceleX = Alpha * acceleration.x + acceleX * (1.0 - Alpha);
         acceleY = Alpha * acceleration.y + acceleY * (1.0 - Alpha);
@@ -300,20 +264,7 @@ class NextViewController: UIViewController,UIGestureRecognizerDelegate,CLLocatio
         genre = "0"
         tapCount += 1
     }
-    
-    //変更 2024/11/13
-    //ジャンルにデータが無い場合、ボタンを自動切り替え
-    func setSwitchButtonName(){
-        genre = "0"
-        genres.setTitle(NSLocalizedString("normal", comment: ""), for: .normal)
-        genreName = NSLocalizedString("normal", comment: "")
-    }
-    
-    // 認識中　赤枠線表示
-//    func changeColorFrame(){
-//        cameraImageView.layer.borderColor = UIColor.red.cgColor
-//        cameraImageView.layer.borderWidth = 5
-//    }
+
     //画面から移動した時に呼ばれる
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
@@ -362,11 +313,13 @@ extension NextViewController: VideoCaptureDelegate {
             // 案内文を取得
             let resultMessages = codeBlock.resultValue(key: guidanceKey, type: .guidance)
             let key = resultMessages.0
+            
+            var playGenre = genre
 
             
             //データベースのキーと取得したキーを照合し、違ったら、ジャンルボタンを一般に変更
             if guidanceKey != key {
-                setSwitchButtonName()
+                playGenre = "0"
             }
             
             
@@ -379,7 +332,7 @@ extension NextViewController: VideoCaptureDelegate {
             guideTextClone = guideText*/
             
             // 読み方を取得
-            codeBlock2.checkDeviceLocation(Code: code, Angle: angle, Genre: genre)
+            codeBlock2.checkDeviceLocation(Code: code, Angle: angle, Genre: playGenre)
             //resultCallsの２番目（type）の値がnilであればUnregisteredが入る
         
             // 案内文にURLが入っている場合、読み方を表示し、読み方をアナウンスする
@@ -406,7 +359,7 @@ extension NextViewController: VideoCaptureDelegate {
             //変更 2024/06/28
             //guidance.text = guideText
             //guideTextClone = guideText
-            guideVoice.readGuide(manuscript: voiceGuidance, genre: genre, lang: codeBlock.language!)
+            guideVoice.readGuide(manuscript: voiceGuidance, genre: playGenre, lang: codeBlock.language!)
             
             if urlMessage != ""{
                 guard let web = NSURL(string: urlMessage) else { return }
