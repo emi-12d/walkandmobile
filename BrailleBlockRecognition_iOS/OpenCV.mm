@@ -142,7 +142,7 @@ cv::Mat cvMatC3(cv::Mat cvMat){
         //if (ret0==0) continue;
     }
     /////////////////////////////////
-    /////////////////////////////////
+    ///2026/7 修正
         Code=0;
         Angl=-1;
 
@@ -150,18 +150,18 @@ cv::Mat cvMatC3(cv::Mat cvMat){
         int retw=-1;
         int TrBW=-1;
 
-        // 1. まず黒三角（TrBW = 0）をチェックする
+        // 黒三角（TrBW = 0）をチェックする
         if (tindex != 0){
             trindex = Trcheck(Tr, tindex, tr);// ダブりチェックa
-            TrBW=0;// Black TR
+            TrBW=0;
             ret = FHomo(image, sq, sqindex, tr, trindex, TrBW);
 
             if (ret == 0) { // 1個のみ取得できた場合
-                // 旧コードに合わせて <= に修正
+                
                 if ((Code >= 5242880) && (Code <= 6291456)) {
                     ret = 1; // 成功とみなす
                 } else {
-                    // 【重要】範囲外のコード（ノイズ）だった場合はエラーとしてリセット
+                    // 範囲外のコード（ノイズ）だった場合はエラーとしてリセット
                     ret = -1;
                     Code = 0;
                     Angl = -1;
@@ -169,14 +169,13 @@ cv::Mat cvMatC3(cv::Mat cvMat){
             }
         }
 
-        // 2. 黒三角で有効なコードが取れなかった場合のみ、白三角（TrBW = 1）をチェックする
+        // 黒三角で有効なコードが取れなかった場合のみ、白三角（TrBW = 1）をチェックする
         if (ret < 0 && twindex != 0){
-            trwindex = Trcheck(Trw, twindex, trw);// ダブりチェックa
-            TrBW=1;// White TR
+            trwindex = Trcheck(Trw, twindex, trw);// ダブりチェック
+            TrBW=1;
             retw = FHomo(image, sq, sqindex, trw, trwindex, TrBW);
 
             if (retw == 0) { // 1個のみ取得できた場合
-                // 旧コードに合わせて <= に修正
                 if ((Code >= 5242880) && (Code <= 6291456)) {
                     retw = 1; // 成功とみなす
                 } else {
@@ -195,7 +194,6 @@ cv::Mat cvMatC3(cv::Mat cvMat){
         }
 
         cv::cvtColor(image, image0, COLOR_BGR2RGBA);
-        /////////////////////////////////////////////
     /////////////////////////////////////////////
 
 //    Ret[0]=ret;
@@ -1745,8 +1743,8 @@ else if (ax[0] > ax[2]){
           }
 
           //////////////////////////////////////////////////////////////////////////
-          polylines(img, sq[n], true, Scalar(255, 0, 0), 2);
-          polylines(img, tr[m], true, Scalar(255, 0,0), 2);// 三角形をはっきりさせるため　2019-9-20
+          polylines(image, sq[n], true, Scalar(255, 0, 0), 2);
+          polylines(image, tr[m], true, Scalar(255, 0,0), 2);// 三角形をはっきりさせるため　2019-9-20
 
                   //fillConvexPoly(image,tr[m],Scalar(0,0,0));
                   //fillConvexPoly(image,tr[m],Scalar(255,255,255));//White
