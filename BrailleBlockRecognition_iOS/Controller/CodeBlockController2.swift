@@ -15,6 +15,7 @@ class CodeBlockController2 : UIViewController{
     private var isFetchingURL = false
     var player: AVPlayer!
     var playerLayer: AVPlayerLayer!
+    private var statusObserver: NSKeyValueObservation?
     private var networkMonitor: NWPathMonitor!
     private let queue = DispatchQueue(label: "com.networkconfig")
     private var isMonitoringStarted = false
@@ -89,21 +90,21 @@ class CodeBlockController2 : UIViewController{
     // ストリーミング再生が終了した時に呼ばれるメソッド
     @objc public func playerDidFinish(notification: Notification) {
 
-        //変更 2024/10/24
         viewController?.videoCapture.startCapturing()
+        // 💡 VoiceOver ON時（nextViewController）のカメラも再開させる
+        nextViewController?.videoCapture.startCapturing()
         
         isFetchingURL = false
         
-        //変更 2024/06/28
-        // 再生が終了したときの処理をここに記述
         viewController?.finishmotion()
+        // 💡 nextViewController側の finishmotion は削除済みのため呼ばない！
+        // nextViewController?.finishmotion()
+        
         viewController?.playerDidFinishPlaying(notification: notification)
         nextViewController?.playerDidFinishPlaying(notification: notification)
         print("ストリーミング再生が終了しました")
         
-        //変更 2024/07/21
         setPlayerRate()
-        
     }
     public func checkDeviceLocation(Code:Int, Angle:Int, Genre:String){
         //AWS
@@ -203,51 +204,71 @@ class CodeBlockController2 : UIViewController{
     //変更 2024/06/19
     @objc func playAudio(){
         
-        //変更 2024/10/24
         viewController?.videoCapture.stopCapturing()
+        nextViewController?.videoCapture.stopCapturing()
         
-        //変更 2024/06/27
         guard let url = currentURL else {
             print("URL is return")
             return
         }
         let playerItem = AVPlayerItem(url: url)
+        
+        // 💡 あなたの素晴らしい監視ロジックを採用！
+        // サーバー上にファイルが存在しない場合を検知
+        statusObserver = playerItem.observe(\.status, options: [.new]) { [weak self] item, _ in
+            guard let self = self else { return }
+            
+            if item.status == .failed {
+                print("サーバーに音声ファイルが見つかりません。未登録として処理します。")
+                
+                if UIAccessibility.isVoiceOverRunning {
+                    self.guideVoice.echo(manuscript: "もう一度読み取ってください", lang: "ja")
+                }
+                
+                // 音声が終わる頃（2秒後）に、強制的に完了処理を呼び出してカメラのフリーズを解除
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                    self.playerDidFinish(notification: Notification(name: .AVPlayerItemDidPlayToEndTime))
+                }
+            }
+        }
+        
         self.player = AVPlayer(playerItem: playerItem)
-        self.playerLayer = AVPlayerLayer(player: self.player)
-        playerLayer.frame = view.bounds
-        view.layer.addSublayer(playerLayer)
+        
+        // 🚨【重要】画面（UI）にレイヤーを貼る処理だけは、必ずメインスレッドで行う！
+        DispatchQueue.main.async {
+            self.playerLayer = AVPlayerLayer(player: self.player)
+            self.playerLayer?.frame = self.view.bounds
+            if let safeLayer = self.playerLayer {
+                self.view.layer.addSublayer(safeLayer)
+            }
+        }
+        
         player?.play()
-        
-        //変更 2024/07/07
         setPlayerRate()
-        /*DispatchQueue.main.asyncAfter(deadline: .now() + 0.1){ //0.1秒後に再生速度を設定
-         self.player.rate = UserDefaults.standard.float(forKey: "reproductionSpeed") //再生速度を設定
-         }*/
-        
         guideVoice.process = true
+        
         NotificationCenter.default.addObserver(self, selector: #selector(playerDidFinish), name: .AVPlayerItemDidPlayToEndTime, object: playerItem)
-        
-        //変更 2024/07/21
         updatePlaybckSpeed(playbackSpeed)
-        
     }
     
     @objc func stopAudio(){
         player?.pause()
         player?.seek(to: .zero)
         
-        //変更 2024/06/27
+        // エラー監視を解除
+        statusObserver?.invalidate()
+        statusObserver = nil
+        
         player?.replaceCurrentItem(with: nil)
         player = nil
-        playerLayer?.removeFromSuperlayer()
-        playerLayer = nil
+        
+        // 🚨【重要】画面（UI）からレイヤーを剥がす処理も絶対にメインスレッド！
+        DispatchQueue.main.async {
+            self.playerLayer?.removeFromSuperlayer()
+            self.playerLayer = nil
+        }
         
         guideVoice.process = false
-        
-        //変更 2024/07/21
-        //setPlayerRate()
-        
-        
     }
     
     //変更2024/07/07
