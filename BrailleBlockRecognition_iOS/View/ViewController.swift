@@ -235,16 +235,16 @@ class ViewController: UIViewController, UIGestureRecognizerDelegate,CLLocationMa
         infoBarButtonItem = UIBarButtonItem(image: UIImage(systemName: "info.circle"), style: .done, target: self, action: #selector(infoBarButtonTapped(_:)))
         self.navigationItem.leftBarButtonItem = infoBarButtonItem
         //ダブルタップ設定
-        locationManager.delegate = self
-        locationManager.desiredAccuracy = kCLLocationAccuracyBest
-        locationManager.requestWhenInUseAuthorization()
-        //ダブルタップイベントを登録
-        let tapGesture: UITapGestureRecognizer = UITapGestureRecognizer(
-                        target: self,
-                        action: #selector(tapped(_:)))
-        tapGesture.delegate = self
-        tapGesture.numberOfTapsRequired = 2//ダブルタップで反応
-        self.view.addGestureRecognizer(tapGesture)
+//        locationManager.delegate = self
+//        locationManager.desiredAccuracy = kCLLocationAccuracyBest
+//        locationManager.requestWhenInUseAuthorization()
+//        //ダブルタップイベントを登録
+//        let tapGesture: UITapGestureRecognizer = UITapGestureRecognizer(
+//                        target: self,
+//                        action: #selector(tapped(_:)))
+//        tapGesture.delegate = self
+//        tapGesture.numberOfTapsRequired = 2//ダブルタップで反応
+//        self.view.addGestureRecognizer(tapGesture)
         //長押しイベントを登録
         let longpressGesture = UILongPressGestureRecognizer(target: self, action: #selector(ViewController.longPress(_:)))
         
@@ -291,15 +291,15 @@ class ViewController: UIViewController, UIGestureRecognizerDelegate,CLLocationMa
         
     }
     //避難所情報取得機能で使う関数　↓
-    @objc func tapped(_ sender: UITapGestureRecognizer){
-        //ダブルタップした時の処理
-        if genre == "2" {
-            locationManager.requestLocation()   //現在地取得のやつ
-            let nextViewController = self.storyboard?.instantiateViewController(withIdentifier: "toEvaVC") as! EvacuationViewController
-            self.present(nextViewController, animated: true, completion: nil)
-        }
-    }
-    
+//    @objc func tapped(_ sender: UITapGestureRecognizer){
+//        //ダブルタップした時の処理
+//        if genre == "2" {
+//            locationManager.requestLocation()   //現在地取得のやつ
+//            let nextViewController = self.storyboard?.instantiateViewController(withIdentifier: "toEvaVC") as! EvacuationViewController
+//            self.present(nextViewController, animated: true, completion: nil)
+//        }
+//    }
+//    
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
             guard let loc = locations.last else { return }
             
