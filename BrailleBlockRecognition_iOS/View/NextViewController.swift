@@ -419,7 +419,7 @@ extension NextViewController: AudioPlayerDelegate {
             if motionManager.isAccelerometerAvailable {
                 motionManager.accelerometerUpdateInterval = 0.1
                 motionManager.startAccelerometerUpdates(
-                    to: OperationQueue.current!,
+                    to: OperationQueue.main,
                     withHandler: { (accelData: CMAccelerometerData?, error: Error?) in
                         guard let data = accelData else { return }
                         self.lowpassFilter(acceleration: data.acceleration)

@@ -201,76 +201,89 @@ class CodeBlockController2 : UIViewController{
         return audio
     }
     
-    //変更 2024/06/19
-    @objc func playAudio(){
-        
-        viewController?.videoCapture.stopCapturing()
-        nextViewController?.videoCapture.stopCapturing()
-        
-        guard let url = currentURL else {
-            print("URL is return")
-            return
-        }
-        let playerItem = AVPlayerItem(url: url)
-        
-        // 💡 あなたの素晴らしい監視ロジックを採用！
-        // サーバー上にファイルが存在しない場合を検知
-        statusObserver = playerItem.observe(\.status, options: [.new]) { [weak self] item, _ in
-            guard let self = self else { return }
+    //変更 2026/9/16
+    @objc func playAudio() {
+        guideVoice.process = true
+
+        let setupTask = {
+            self.viewController?.videoCapture.stopCapturing()
+            guard let url = self.currentURL else {
+                print("URL is return")
+                return
+            }
             
-            if item.status == .failed {
-                print("サーバーに音声ファイルが見つかりません。未登録として処理します。")
+            let playerItem = AVPlayerItem(url: url)
+            
+            // サーバー上にファイルが存在しない場合を検知
+            self.statusObserver = playerItem.observe(\.status, options: [.new]) { [weak self] item, _ in
+                guard let self = self else { return }
                 
-                if UIAccessibility.isVoiceOverRunning {
-                    self.guideVoice.echo(manuscript: "もう一度読み取ってください", lang: "ja")
-                }
-                
-                // 音声が終わる頃（2秒後）に、強制的に完了処理を呼び出してカメラのフリーズを解除
-                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                    self.playerDidFinish(notification: Notification(name: .AVPlayerItemDidPlayToEndTime))
+                if item.status == .failed {
+                    print("サーバーに音声ファイルが見つかりません。未登録として処理します。")
+                    if UIAccessibility.isVoiceOverRunning {
+                        self.guideVoice.echo(manuscript: "もう一度読み取ってください", lang: "ja")
+                    }
+                    
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                        guard self.player != nil else { return }
+                        self.playerDidFinish(notification: Notification(name: .AVPlayerItemDidPlayToEndTime))
+                    }
                 }
             }
-        }
-        
-        self.player = AVPlayer(playerItem: playerItem)
-        
-        // 🚨【重要】画面（UI）にレイヤーを貼る処理だけは、必ずメインスレッドで行う！
-        DispatchQueue.main.async {
+            
+            self.player = AVPlayer(playerItem: playerItem)
             self.playerLayer = AVPlayerLayer(player: self.player)
             self.playerLayer?.frame = self.view.bounds
             if let safeLayer = self.playerLayer {
                 self.view.layer.addSublayer(safeLayer)
             }
+            
+            self.player?.play()
+            self.setPlayerRate()
+            
+            NotificationCenter.default.addObserver(self, selector: #selector(self.playerDidFinish), name: .AVPlayerItemDidPlayToEndTime, object: playerItem)
+            
+            self.updatePlaybckSpeed(self.playbackSpeed)
         }
-        
-        player?.play()
-        setPlayerRate()
-        guideVoice.process = true
-        
-        NotificationCenter.default.addObserver(self, selector: #selector(playerDidFinish), name: .AVPlayerItemDidPlayToEndTime, object: playerItem)
-        updatePlaybckSpeed(playbackSpeed)
+
+        if UIAccessibility.isVoiceOverRunning {
+            // VoiceOver ON：メインを指定して実行
+            DispatchQueue.main.async {
+                setupTask()
+            }
+        } else {
+            // VoiceOver OFF：即座に実行する
+            setupTask()
+        }
     }
     
-    @objc func stopAudio(){
-        player?.pause()
-        player?.seek(to: .zero)
-        
-        // エラー監視を解除
-        statusObserver?.invalidate()
-        statusObserver = nil
-        
-        player?.replaceCurrentItem(with: nil)
-        player = nil
-        
-        // 🚨【重要】画面（UI）からレイヤーを剥がす処理も絶対にメインスレッド！
-        DispatchQueue.main.async {
+    @objc func stopAudio() {
+
+        self.player?.pause()
+        self.player?.seek(to: .zero)
+
+        let cleanupTask = {
+
+            
+            self.statusObserver?.invalidate()
+            self.statusObserver = nil
+            self.player?.replaceCurrentItem(with: nil)
+            self.player = nil
             self.playerLayer?.removeFromSuperlayer()
             self.playerLayer = nil
+            self.guideVoice.process = false
         }
-        
-        guideVoice.process = false
+
+        if UIAccessibility.isVoiceOverRunning {
+            // VoiceOver ON：メインを指定して実行
+            DispatchQueue.main.async {
+                cleanupTask()
+            }
+        } else {
+            // VoiceOver OFF：即座に実行する
+            cleanupTask()
+        }
     }
-    
     //変更2024/07/07
     //再生速度を設定するメソッド
     func setPlayerRate(){
