@@ -246,7 +246,7 @@ class ViewController: UIViewController, UIGestureRecognizerDelegate,CLLocationMa
 //        tapGesture.numberOfTapsRequired = 2//ダブルタップで反応
 //        self.view.addGestureRecognizer(tapGesture)
         //長押しイベントを登録
-        let longpressGesture = UILongPressGestureRecognizer(target: self, action: #selector(ViewController.longPress(_:)))
+        let longpressGesture = UILongPressGestureRecognizer(target: self, action: t#selector(ViewController.longPress(_:)))
         
         longpressGesture.delegate = self
         self.view.addGestureRecognizer(longpressGesture)
